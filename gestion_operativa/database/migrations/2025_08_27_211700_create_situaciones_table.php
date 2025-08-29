@@ -13,7 +13,7 @@ class CreateSituacionesTable extends Migration
      */
     public function up()
     {
-        Schema::create('situaciones', function (Blueprint $table) {
+        Schema::create('situacions', function (Blueprint $table) {
             $table->id();
             $table->string('nombre', 50);
             $table->boolean('estado')->default(true);
@@ -28,6 +28,6 @@ class CreateSituacionesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('situaciones');
+        Schema::dropIfExists('situacions');
     }
 }

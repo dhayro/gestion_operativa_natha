@@ -13,7 +13,7 @@ class CreateServiciosElectricoTable extends Migration
      */
     public function up()
     {
-        Schema::create('servicios_electrico', function (Blueprint $table) {
+        Schema::create('servicio_electricos', function (Blueprint $table) {
             $table->id();
             $table->string('nombre', 50);
             $table->boolean('estado')->default(true);
@@ -28,6 +28,6 @@ class CreateServiciosElectricoTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('servicios_electrico');
+        Schema::dropIfExists('servicio_electricos');
     }
 }

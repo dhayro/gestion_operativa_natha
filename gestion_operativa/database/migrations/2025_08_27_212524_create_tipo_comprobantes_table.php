@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTiposDocumentoNeaTable extends Migration
+class CreateTipoComprobantesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,7 +13,7 @@ class CreateTiposDocumentoNeaTable extends Migration
      */
     public function up()
     {
-        Schema::create('tipos_documento_nea', function (Blueprint $table) {
+        Schema::create('tipo_comprobantes', function (Blueprint $table) {
             $table->id();
             $table->string('nombre', 20)->unique();
             $table->boolean('estado')->default(true);
@@ -28,6 +28,6 @@ class CreateTiposDocumentoNeaTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('tipos_documento_nea');
+        Schema::dropIfExists('tipo_comprobantes');
     }
 }

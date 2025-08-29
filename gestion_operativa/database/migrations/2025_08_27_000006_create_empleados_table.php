@@ -30,7 +30,7 @@ class CreateEmpleadosTable extends Migration
 
             $table->foreign('cargo_id')->references('id')->on('cargos')->onDelete('restrict');
             $table->foreign('area_id')->references('id')->on('areas')->onDelete('restrict');
-            $table->foreign('ubigeo_id')->references('id')->on('ubigeo')->onDelete('restrict');
+            $table->foreign('ubigeo_id')->references('id')->on('ubigeos')->onDelete('restrict');
         });
     }
 

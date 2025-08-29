@@ -32,7 +32,7 @@ class CreatePapeletasTable extends Migration
     
             $table->foreign('usuario_creacion_id')->references('id')->on('usuarios')->onDelete('restrict');
             $table->foreign('usuario_actualizacion_id')->references('id')->on('usuarios')->onDelete('restrict');
-            $table->foreign('asignacion_vehiculo_id')->references('id')->on('asignacion_vehiculo')->onDelete('restrict');
+            $table->foreign('asignacion_vehiculo_id')->references('id')->on('asignacion_vehiculos')->onDelete('restrict');
         });
     }
 

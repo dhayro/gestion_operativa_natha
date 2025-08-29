@@ -13,7 +13,7 @@ class CreateNeaDetalleTable extends Migration
      */
     public function up()
     {
-        Schema::create('nea_detalle', function (Blueprint $table) {
+        Schema::create('nea_detalles', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('nea_id');
             $table->unsignedBigInteger('material_id');
@@ -28,7 +28,7 @@ class CreateNeaDetalleTable extends Migration
             $table->foreign('usuario_creacion_id')->references('id')->on('usuarios')->onDelete('restrict');
             $table->foreign('usuario_actualizacion_id')->references('id')->on('usuarios')->onDelete('restrict');
             $table->foreign('nea_id')->references('id')->on('neas')->onDelete('restrict');
-            $table->foreign('material_id')->references('id')->on('materiales')->onDelete('restrict');
+            $table->foreign('material_id')->references('id')->on('materials')->onDelete('restrict');
         });
     }
 
@@ -39,6 +39,6 @@ class CreateNeaDetalleTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('nea_detalle');
+        Schema::dropIfExists('nea_detalles');
     }
 }

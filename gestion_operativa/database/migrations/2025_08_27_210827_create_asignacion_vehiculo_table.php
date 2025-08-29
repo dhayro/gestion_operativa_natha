@@ -13,7 +13,7 @@ class CreateAsignacionVehiculoTable extends Migration
      */
     public function up()
     {
-        Schema::create('asignacion_vehiculo', function (Blueprint $table) {
+        Schema::create('asignacion_vehiculos', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('cuadrilla_id');
             $table->unsignedBigInteger('vehiculo_id');
@@ -33,6 +33,6 @@ class CreateAsignacionVehiculoTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('asignacion_vehiculo');
+        Schema::dropIfExists('asignacion_vehiculos');
     }
 }

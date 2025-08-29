@@ -13,7 +13,7 @@ class CreateFichasActividadesTable extends Migration
      */
     public function up()
     {
-        Schema::create('fichas_actividades', function (Blueprint $table) {
+        Schema::create('ficha_actividads', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('tipo_actividad_id');
             $table->unsignedBigInteger('suministro_id');
@@ -38,13 +38,13 @@ class CreateFichasActividadesTable extends Migration
     
             $table->foreign('usuario_creacion_id')->references('id')->on('usuarios')->onDelete('restrict');
             $table->foreign('usuario_actualizacion_id')->references('id')->on('usuarios')->onDelete('restrict');
-            $table->foreign('servicio_electrico_id')->references('id')->on('servicios_electrico')->onDelete('restrict');
-            $table->foreign('tipo_actividad_id')->references('id')->on('tipos_actividad')->onDelete('restrict');
+            $table->foreign('servicio_electrico_id')->references('id')->on('servicio_electricos')->onDelete('restrict');
+            $table->foreign('tipo_actividad_id')->references('id')->on('tipos_actividads')->onDelete('restrict');
             $table->foreign('suministro_id')->references('id')->on('suministros')->onDelete('restrict');
-            $table->foreign('tipo_propiedad_id')->references('id')->on('tipos_propiedad')->onDelete('restrict');
-            $table->foreign('construccion_id')->references('id')->on('construcciones')->onDelete('restrict');
+            $table->foreign('tipo_propiedad_id')->references('id')->on('tipos_propiedads')->onDelete('restrict');
+            $table->foreign('construccion_id')->references('id')->on('construccions')->onDelete('restrict');
             $table->foreign('uso_id')->references('id')->on('usos')->onDelete('restrict');
-            $table->foreign('situacion_id')->references('id')->on('situaciones')->onDelete('restrict');
+            $table->foreign('situacion_id')->references('id')->on('situacions')->onDelete('restrict');
         });
     }
 
@@ -55,6 +55,6 @@ class CreateFichasActividadesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('fichas_actividades');
+        Schema::dropIfExists('ficha_actividads');
     }
 }

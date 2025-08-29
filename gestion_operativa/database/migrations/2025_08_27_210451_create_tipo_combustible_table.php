@@ -13,7 +13,7 @@ class CreateTipoCombustibleTable extends Migration
      */
     public function up()
     {
-        Schema::create('tipo_combustible', function (Blueprint $table) {
+        Schema::create('tipo_combustibles', function (Blueprint $table) {
             $table->id();
             $table->string('nombre', 100);
             $table->boolean('estado')->default(true);
@@ -28,6 +28,6 @@ class CreateTipoCombustibleTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('tipo_combustible');
+        Schema::dropIfExists('tipo_combustibles');
     }
 }

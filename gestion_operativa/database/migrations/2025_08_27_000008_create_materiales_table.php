@@ -13,7 +13,7 @@ class CreateMaterialesTable extends Migration
      */
     public function up()
     {
-        Schema::create('materiales', function (Blueprint $table) {
+        Schema::create('materials', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('categoria_id');
             $table->string('nombre', 100);
@@ -26,7 +26,7 @@ class CreateMaterialesTable extends Migration
             $table->timestamps();
 
             $table->foreign('categoria_id')->references('id')->on('categorias')->onDelete('restrict');
-            $table->foreign('unidad_medida_id')->references('id')->on('unidades_medida')->onDelete('restrict');
+            $table->foreign('unidad_medida_id')->references('id')->on('unidad_medidas')->onDelete('restrict');
         });
     }
 
@@ -37,6 +37,6 @@ class CreateMaterialesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('materiales');
+        Schema::dropIfExists('materials');
     }
 }

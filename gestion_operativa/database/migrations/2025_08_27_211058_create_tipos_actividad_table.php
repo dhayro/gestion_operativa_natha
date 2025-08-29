@@ -13,14 +13,14 @@ class CreateTiposActividadTable extends Migration
      */
     public function up()
     {
-        Schema::create('tipos_actividad', function (Blueprint $table) {
+        Schema::create('tipos_actividads', function (Blueprint $table) {
             $table->id();
             $table->string('nombre', 50);
             $table->unsignedBigInteger('dependencia_id')->nullable();
             $table->boolean('estado')->default(true);
             $table->timestamps();
     
-            $table->foreign('dependencia_id')->references('id')->on('tipos_actividad')->onDelete('restrict');
+            $table->foreign('dependencia_id')->references('id')->on('tipos_actividads')->onDelete('restrict');
         });
     }
 
@@ -31,6 +31,6 @@ class CreateTiposActividadTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('tipos_actividad');
+        Schema::dropIfExists('tipos_actividads');
     }
 }

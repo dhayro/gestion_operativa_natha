@@ -13,7 +13,7 @@ class CreateMedidoresTable extends Migration
      */
     public function up()
     {
-        Schema::create('medidores', function (Blueprint $table) {
+        Schema::create('medidors', function (Blueprint $table) {
             $table->id();
             $table->string('serie', 50)->unique();
             $table->string('modelo', 50);
@@ -29,7 +29,7 @@ class CreateMedidoresTable extends Migration
     
             $table->foreign('usuario_creacion_id')->references('id')->on('usuarios')->onDelete('restrict');
             $table->foreign('usuario_actualizacion_id')->references('id')->on('usuarios')->onDelete('restrict');
-            $table->foreign('material_id')->references('id')->on('materiales')->onDelete('restrict');
+            $table->foreign('material_id')->references('id')->on('materials')->onDelete('restrict');
     
             $table->timestamps();
         });
@@ -42,6 +42,6 @@ class CreateMedidoresTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('medidores');
+        Schema::dropIfExists('medidors');
     }
 }

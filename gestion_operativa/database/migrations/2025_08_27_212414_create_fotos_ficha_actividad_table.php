@@ -13,7 +13,7 @@ class CreateFotosFichaActividadTable extends Migration
      */
     public function up()
     {
-        Schema::create('fotos_ficha_actividad', function (Blueprint $table) {
+        Schema::create('foto_ficha_actividads', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('ficha_actividad_id');
             $table->text('url');
@@ -26,7 +26,7 @@ class CreateFotosFichaActividadTable extends Migration
     
             $table->foreign('usuario_creacion_id')->references('id')->on('usuarios')->onDelete('restrict');
             $table->foreign('usuario_actualizacion_id')->references('id')->on('usuarios')->onDelete('restrict');
-            $table->foreign('ficha_actividad_id')->references('id')->on('fichas_actividades')->onDelete('restrict');
+            $table->foreign('ficha_actividad_id')->references('id')->on('ficha_actividads')->onDelete('restrict');
         });
     }
 
@@ -37,6 +37,6 @@ class CreateFotosFichaActividadTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('fotos_ficha_actividad');
+        Schema::dropIfExists('foto_ficha_actividads');
     }
 }

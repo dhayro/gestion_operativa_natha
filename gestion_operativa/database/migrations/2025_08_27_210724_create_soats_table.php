@@ -24,7 +24,7 @@ class CreateSoatsTable extends Migration
             $table->timestamps();
     
             $table->foreign('vehiculo_id')->references('id')->on('vehiculos')->onDelete('restrict');
-            $table->foreign('proveedor_id')->references('id')->on('proveedores')->onDelete('restrict');
+            $table->foreign('proveedor_id')->references('id')->on('proveedors')->onDelete('restrict');
         });
     }
 

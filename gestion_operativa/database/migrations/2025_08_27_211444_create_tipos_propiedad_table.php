@@ -13,7 +13,7 @@ class CreateTiposPropiedadTable extends Migration
      */
     public function up()
     {
-        Schema::create('tipos_propiedad', function (Blueprint $table) {
+        Schema::create('tipos_propiedads', function (Blueprint $table) {
             $table->id();
             $table->string('nombre', 50);
             $table->boolean('estado')->default(true);
@@ -28,6 +28,6 @@ class CreateTiposPropiedadTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('tipos_propiedad');
+        Schema::dropIfExists('tipos_propiedads');
     }
 }

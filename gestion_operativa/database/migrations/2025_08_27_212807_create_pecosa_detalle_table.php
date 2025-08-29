@@ -13,7 +13,7 @@ class CreatePecosaDetalleTable extends Migration
      */
     public function up()
     {
-        Schema::create('pecosa_detalle', function (Blueprint $table) {
+        Schema::create('pecosa_detalles', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('pecosa_id');
             $table->unsignedBigInteger('nea_detalle_id');
@@ -27,8 +27,8 @@ class CreatePecosaDetalleTable extends Migration
     
             $table->foreign('usuario_creacion_id')->references('id')->on('usuarios')->onDelete('restrict');
             $table->foreign('usuario_actualizacion_id')->references('id')->on('usuarios')->onDelete('restrict');
-            $table->foreign('pecosa_id')->references('id')->on('pecosa')->onDelete('restrict');
-            $table->foreign('nea_detalle_id')->references('id')->on('nea_detalle')->onDelete('restrict');
+            $table->foreign('pecosa_id')->references('id')->on('pecosas')->onDelete('restrict');
+            $table->foreign('nea_detalle_id')->references('id')->on('nea_detalles')->onDelete('restrict');
         });
     }
 
@@ -39,6 +39,6 @@ class CreatePecosaDetalleTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('pecosa_detalle');
+        Schema::dropIfExists('pecosa_detalles');
     }
 }

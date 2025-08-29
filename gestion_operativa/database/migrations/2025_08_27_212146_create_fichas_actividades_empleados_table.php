@@ -13,7 +13,7 @@ class CreateFichasActividadesEmpleadosTable extends Migration
      */
     public function up()
     {
-        Schema::create('fichas_actividades_empleados', function (Blueprint $table) {
+        Schema::create('ficha_actividad_empleados', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('ficha_actividad_id');
             $table->unsignedBigInteger('cuadrilla_empleado_id');
@@ -24,7 +24,7 @@ class CreateFichasActividadesEmpleadosTable extends Migration
     
             $table->foreign('usuario_creacion_id')->references('id')->on('usuarios')->onDelete('restrict');
             $table->foreign('usuario_actualizacion_id')->references('id')->on('usuarios')->onDelete('restrict');
-            $table->foreign('ficha_actividad_id')->references('id')->on('fichas_actividades')->onDelete('cascade');
+            $table->foreign('ficha_actividad_id')->references('id')->on('ficha_actividads')->onDelete('cascade');
             $table->foreign('cuadrilla_empleado_id')->references('id')->on('cuadrillas_empleados')->onDelete('restrict');
         });
     }
@@ -36,6 +36,6 @@ class CreateFichasActividadesEmpleadosTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('fichas_actividades_empleados');
+        Schema::dropIfExists('ficha_actividad_empleados');
     }
 }
