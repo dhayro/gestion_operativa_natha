@@ -13,13 +13,13 @@ class CreateUbigeoTable extends Migration
      */
     public function up()
     {
-        Schema::create('ubigeo', function (Blueprint $table) {
+        Schema::create('ubigeos', function (Blueprint $table) {
             $table->id();
             $table->string('nombre', 100);
             $table->string('codigo_postal', 10)->nullable();
             $table->unsignedBigInteger('dependencia_id')->nullable();
             $table->boolean('estado')->default(true);
-            $table->foreign('dependencia_id')->references('id')->on('ubigeo')->onDelete('restrict');
+            $table->foreign('dependencia_id')->references('id')->on('ubigeos')->onDelete('restrict');
         });
     }
 
@@ -30,6 +30,6 @@ class CreateUbigeoTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('ubigeo');
+        Schema::dropIfExists('ubigeos');
     }
 }

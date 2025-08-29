@@ -13,7 +13,7 @@ class CreateMedidorSuministroTable extends Migration
      */
     public function up()
     {
-        Schema::create('medidor_suministro', function (Blueprint $table) {
+        Schema::create('medidor_suministros', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('suministro_id');
             $table->unsignedBigInteger('medidor_id');
@@ -28,8 +28,8 @@ class CreateMedidorSuministroTable extends Migration
             $table->foreign('usuario_creacion_id')->references('id')->on('usuarios')->onDelete('restrict');
             $table->foreign('usuario_actualizacion_id')->references('id')->on('usuarios')->onDelete('restrict');
             $table->foreign('suministro_id')->references('id')->on('suministros')->onDelete('restrict');
-            $table->foreign('medidor_id')->references('id')->on('medidores')->onDelete('restrict');
-            $table->foreign('ficha_actividad_id')->references('id')->on('fichas_actividades')->onDelete('restrict');
+            $table->foreign('medidor_id')->references('id')->on('medidors')->onDelete('restrict');
+            $table->foreign('ficha_actividad_id')->references('id')->on('ficha_actividads')->onDelete('restrict');
         });
     }
 
@@ -40,6 +40,6 @@ class CreateMedidorSuministroTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('medidor_suministro');
+        Schema::dropIfExists('medidor_suministros');
     }
 }

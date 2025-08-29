@@ -13,7 +13,7 @@ class CreatePecosaTable extends Migration
      */
     public function up()
     {
-        Schema::create('pecosa', function (Blueprint $table) {
+        Schema::create('pecosas', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('cuadrilla_empleado_id');
             $table->date('fecha')->default(DB::raw('CURRENT_DATE'));
@@ -37,6 +37,6 @@ class CreatePecosaTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('pecosa');
+        Schema::dropIfExists('pecosas');
     }
 }

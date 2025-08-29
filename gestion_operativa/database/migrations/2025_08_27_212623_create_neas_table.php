@@ -18,7 +18,7 @@ class CreateNeasTable extends Migration
             $table->unsignedBigInteger('proveedor_id');
             $table->date('fecha')->default(DB::raw('CURRENT_DATE'));
             $table->string('nro_documento', 50)->unique();
-            $table->unsignedBigInteger('tipo_documento_id');
+            $table->unsignedBigInteger('tipo_comprobante_id');
             $table->text('observaciones')->nullable();
             $table->boolean('estado')->default(true);
             $table->unsignedBigInteger('usuario_creacion_id')->nullable();
@@ -27,8 +27,8 @@ class CreateNeasTable extends Migration
     
             $table->foreign('usuario_creacion_id')->references('id')->on('usuarios')->onDelete('restrict');
             $table->foreign('usuario_actualizacion_id')->references('id')->on('usuarios')->onDelete('restrict');
-            $table->foreign('proveedor_id')->references('id')->on('proveedores')->onDelete('restrict');
-            $table->foreign('tipo_documento_id')->references('id')->on('tipos_documento_nea')->onDelete('restrict');
+            $table->foreign('proveedor_id')->references('id')->on('proveedors')->onDelete('restrict');
+            $table->foreign('tipo_comprobante_id')->references('id')->on('tipo_comprobantes')->onDelete('restrict');
         });
     }
 

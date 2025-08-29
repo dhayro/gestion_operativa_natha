@@ -13,7 +13,7 @@ class CreateDotacionCombustibleTable extends Migration
      */
     public function up()
     {
-        Schema::create('dotacion_combustible', function (Blueprint $table) {
+        Schema::create('dotacion_combustibles', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('papeleta_id');
             $table->decimal('cantidad_gl', 10, 3);
@@ -28,7 +28,7 @@ class CreateDotacionCombustibleTable extends Migration
     
             $table->foreign('usuario_creacion_id')->references('id')->on('usuarios')->onDelete('restrict');
             $table->foreign('usuario_actualizacion_id')->references('id')->on('usuarios')->onDelete('restrict');
-            $table->foreign('tipo_combustible_id')->references('id')->on('tipo_combustible')->onDelete('restrict');
+            $table->foreign('tipo_combustible_id')->references('id')->on('tipo_combustibles')->onDelete('restrict');
             $table->foreign('papeleta_id')->references('id')->on('papeletas')->onDelete('restrict');
         });
     }
@@ -40,6 +40,6 @@ class CreateDotacionCombustibleTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('dotacion_combustible');
+        Schema::dropIfExists('dotacion_combustibles');
     }
 }

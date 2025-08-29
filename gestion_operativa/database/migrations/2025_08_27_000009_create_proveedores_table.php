@@ -13,7 +13,7 @@ class CreateProveedoresTable extends Migration
      */
     public function up()
     {
-        Schema::create('proveedores', function (Blueprint $table) {
+        Schema::create('proveedors', function (Blueprint $table) {
             $table->id();
             $table->string('razon_social', 100);
             $table->char('ruc', 11)->unique();
@@ -25,7 +25,7 @@ class CreateProveedoresTable extends Migration
             $table->boolean('estado')->default(true);
             $table->timestamps();
 
-            $table->foreign('ubigeo_id')->references('id')->on('ubigeo')->onDelete('restrict');
+            $table->foreign('ubigeo_id')->references('id')->on('ubigeos')->onDelete('restrict');
         });
     }
 
@@ -36,6 +36,6 @@ class CreateProveedoresTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('proveedores');
+        Schema::dropIfExists('proveedors');
     }
 }

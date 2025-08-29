@@ -33,8 +33,8 @@ class CreateSuministrosTable extends Migration
     
             $table->foreign('usuario_creacion_id')->references('id')->on('usuarios')->onDelete('restrict');
             $table->foreign('usuario_actualizacion_id')->references('id')->on('usuarios')->onDelete('restrict');
-            $table->foreign('medidor_id')->references('id')->on('medidores')->onDelete('restrict');
-            $table->foreign('ubigeo_id')->references('id')->on('ubigeo')->onDelete('restrict');
+            $table->foreign('medidor_id')->references('id')->on('medidors')->onDelete('restrict');
+            $table->foreign('ubigeo_id')->references('id')->on('ubigeos')->onDelete('restrict');
     
             $table->timestamps();
         });

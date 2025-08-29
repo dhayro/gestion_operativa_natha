@@ -25,7 +25,7 @@ class CreateVehiculosTable extends Migration
             $table->boolean('estado')->default(true);
             $table->timestamps();
     
-            $table->foreign('tipo_combustible_id')->references('id')->on('tipo_combustible')->onDelete('restrict');
+            $table->foreign('tipo_combustible_id')->references('id')->on('tipo_combustibles')->onDelete('restrict');
         });
     }
 

@@ -13,7 +13,7 @@ class CreatePrecintosFichaActividadTable extends Migration
      */
     public function up()
     {
-        Schema::create('precintos_ficha_actividad', function (Blueprint $table) {
+        Schema::create('precinto_ficha_actividads', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('material_id');
             $table->unsignedBigInteger('medidor_ficha_actividad_id');
@@ -26,8 +26,8 @@ class CreatePrecintosFichaActividadTable extends Migration
     
             $table->foreign('usuario_creacion_id')->references('id')->on('usuarios')->onDelete('restrict');
             $table->foreign('usuario_actualizacion_id')->references('id')->on('usuarios')->onDelete('restrict');
-            $table->foreign('material_id')->references('id')->on('materiales')->onDelete('restrict');
-            $table->foreign('medidor_ficha_actividad_id')->references('id')->on('medidores_ficha_actividad')->onDelete('restrict');
+            $table->foreign('material_id')->references('id')->on('materials')->onDelete('restrict');
+            $table->foreign('medidor_ficha_actividad_id')->references('id')->on('medidor_ficha_actividads')->onDelete('restrict');
         });
     }
 
@@ -38,6 +38,6 @@ class CreatePrecintosFichaActividadTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('precintos_ficha_actividad');
+        Schema::dropIfExists('precinto_ficha_actividads');
     }
 }
