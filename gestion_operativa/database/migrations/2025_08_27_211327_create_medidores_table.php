@@ -27,8 +27,8 @@ class CreateMedidoresTable extends Migration
             $table->unsignedBigInteger('usuario_creacion_id')->nullable();
             $table->unsignedBigInteger('usuario_actualizacion_id')->nullable();
     
-            $table->foreign('usuario_creacion_id')->references('id')->on('usuarios')->onDelete('restrict');
-            $table->foreign('usuario_actualizacion_id')->references('id')->on('usuarios')->onDelete('restrict');
+            $table->foreign('usuario_creacion_id')->references('id')->on('users')->onDelete('restrict');
+            $table->foreign('usuario_actualizacion_id')->references('id')->on('users')->onDelete('restrict');
             $table->foreign('material_id')->references('id')->on('materials')->onDelete('restrict');
     
             $table->timestamps();

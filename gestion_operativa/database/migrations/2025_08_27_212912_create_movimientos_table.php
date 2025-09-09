@@ -28,8 +28,8 @@ class CreateMovimientosTable extends Migration
             $table->unsignedBigInteger('usuario_actualizacion_id')->nullable();
             $table->timestamps();
     
-            $table->foreign('usuario_creacion_id')->references('id')->on('usuarios')->onDelete('restrict');
-            $table->foreign('usuario_actualizacion_id')->references('id')->on('usuarios')->onDelete('restrict');
+            $table->foreign('usuario_creacion_id')->references('id')->on('users')->onDelete('restrict');
+            $table->foreign('usuario_actualizacion_id')->references('id')->on('users')->onDelete('restrict');
             $table->foreign('material_id')->references('id')->on('materials')->onDelete('restrict');
             $table->foreign('nea_detalle_id')->references('id')->on('nea_detalles')->onDelete('restrict');
             $table->foreign('pecosa_detalle_id')->references('id')->on('pecosa_detalles')->onDelete('restrict');

@@ -36,8 +36,8 @@ class CreateFichasActividadesTable extends Migration
             $table->unsignedBigInteger('usuario_actualizacion_id')->nullable();
             $table->timestamps();
     
-            $table->foreign('usuario_creacion_id')->references('id')->on('usuarios')->onDelete('restrict');
-            $table->foreign('usuario_actualizacion_id')->references('id')->on('usuarios')->onDelete('restrict');
+            $table->foreign('usuario_creacion_id')->references('id')->on('users')->onDelete('restrict');
+            $table->foreign('usuario_actualizacion_id')->references('id')->on('users')->onDelete('restrict');
             $table->foreign('servicio_electrico_id')->references('id')->on('servicio_electricos')->onDelete('restrict');
             $table->foreign('tipo_actividad_id')->references('id')->on('tipos_actividads')->onDelete('restrict');
             $table->foreign('suministro_id')->references('id')->on('suministros')->onDelete('restrict');

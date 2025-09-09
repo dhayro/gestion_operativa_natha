@@ -25,8 +25,8 @@ class CreateNeasTable extends Migration
             $table->unsignedBigInteger('usuario_actualizacion_id')->nullable();
             $table->timestamps();
     
-            $table->foreign('usuario_creacion_id')->references('id')->on('usuarios')->onDelete('restrict');
-            $table->foreign('usuario_actualizacion_id')->references('id')->on('usuarios')->onDelete('restrict');
+            $table->foreign('usuario_creacion_id')->references('id')->on('users')->onDelete('restrict');
+            $table->foreign('usuario_actualizacion_id')->references('id')->on('users')->onDelete('restrict');
             $table->foreign('proveedor_id')->references('id')->on('proveedors')->onDelete('restrict');
             $table->foreign('tipo_comprobante_id')->references('id')->on('tipo_comprobantes')->onDelete('restrict');
         });

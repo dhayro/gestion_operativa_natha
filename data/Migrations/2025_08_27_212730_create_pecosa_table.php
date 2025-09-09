@@ -24,8 +24,8 @@ class CreatePecosaTable extends Migration
             $table->unsignedBigInteger('usuario_actualizacion_id')->nullable();
             $table->timestamps();
     
-            $table->foreign('usuario_creacion_id')->references('id')->on('usuarios')->onDelete('restrict');
-            $table->foreign('usuario_actualizacion_id')->references('id')->on('usuarios')->onDelete('restrict');
+            $table->foreign('usuario_creacion_id')->references('id')->on('users')->onDelete('restrict');
+            $table->foreign('usuario_actualizacion_id')->references('id')->on('users')->onDelete('restrict');
             $table->foreign('cuadrilla_empleado_id')->references('id')->on('cuadrillas_empleados')->onDelete('restrict');
         });
     }
