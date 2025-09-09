@@ -1,6 +1,39 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Auth\ResetPasswordController;
+
+Route::get('/test-email', function () {
+    try {
+        // Cambia 'destinatario@example.com' por un correo que puedas revisar.
+        $correoDestino = 'dhayro27@gmail.com';
+
+        Mail::raw('Este es un correo de prueba para verificar la configuración SMTP de Laravel.', function ($message) use ($correoDestino) {
+            $message->to($correoDestino)
+                    ->subject('Prueba de Correo SMTP - Gestión Operativa');
+        });
+
+        return '¡Correo de prueba enviado exitosamente! Revisa la bandeja de entrada de: ' . $correoDestino;
+
+    } catch (\Exception $e) {
+        // Si hay un error, lo mostrará en pantalla.
+        return 'Error al enviar el correo: <br><pre>' . $e->getMessage() . '</pre>';
+    }
+});
+
+// Rutas de Autenticación
+Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
+Route::post('login', [LoginController::class, 'login']);
+Route::post('logout', [LoginController::class, 'logout'])->name('logout');
+
+Route::get('password/reset', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
+Route::post('password/email', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
+Route::get('password/reset/{token}', [ResetPasswordController::class, 'showResetForm'])->name('password.reset');
+Route::post('password/reset', [ResetPasswordController::class, 'reset'])->name('password.update');
+
+Route::middleware(['auth'])->group(function () {
 
 /**
  * =======================
@@ -1327,4 +1360,6 @@ Route::prefix('authentication')->group(function () {
         })->name('cover2sv');
     });
     
+});
+
 });
