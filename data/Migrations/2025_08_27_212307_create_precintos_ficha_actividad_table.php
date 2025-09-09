@@ -24,8 +24,8 @@ class CreatePrecintosFichaActividadTable extends Migration
             $table->unsignedBigInteger('usuario_actualizacion_id')->nullable();
             $table->timestamps();
     
-            $table->foreign('usuario_creacion_id')->references('id')->on('usuarios')->onDelete('restrict');
-            $table->foreign('usuario_actualizacion_id')->references('id')->on('usuarios')->onDelete('restrict');
+            $table->foreign('usuario_creacion_id')->references('id')->on('users')->onDelete('restrict');
+            $table->foreign('usuario_actualizacion_id')->references('id')->on('users')->onDelete('restrict');
             $table->foreign('material_id')->references('id')->on('materials')->onDelete('restrict');
             $table->foreign('medidor_ficha_actividad_id')->references('id')->on('medidor_ficha_actividads')->onDelete('restrict');
         });
