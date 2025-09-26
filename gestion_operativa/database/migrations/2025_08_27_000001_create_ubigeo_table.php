@@ -20,6 +20,7 @@ class CreateUbigeoTable extends Migration
             $table->unsignedBigInteger('dependencia_id')->nullable();
             $table->boolean('estado')->default(true);
             $table->foreign('dependencia_id')->references('id')->on('ubigeos')->onDelete('restrict');
+            $table->timestamps();
         });
     }
 
