@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\UbigeoController; 
 
 Route::get('/test-email', function () {
     try {
@@ -42,6 +43,22 @@ Route::middleware(['auth'])->group(function () {
  */
 Route::get('/', function () {
     return redirect(getRouterValue() . 'dashboard/analytics');
+});
+
+
+
+Route::prefix('ubigeo')->group(function () {
+    // Rutas adicionales
+    Route::get('/data', [UbigeoController::class, 'getData'])->name('ubigeo.data');
+    Route::get('/api/select', [UbigeoController::class, 'getUbigeosForSelect'])->name('ubigeo.select');
+    // Rutas individuales con nombres consistentes
+    Route::get('/', [UbigeoController::class, 'index'])->name('ubigeo.index');
+    Route::post('/', [UbigeoController::class, 'store'])->name('ubigeo.store');
+    Route::get('/{ubigeo}', [UbigeoController::class, 'show'])->name('ubigeo.show');
+    Route::put('/{ubigeo}', [UbigeoController::class, 'update'])->name('ubigeo.update');
+    Route::delete('/{ubigeo}', [UbigeoController::class, 'destroy'])->name('ubigeo.destroy');
+    
+    
 });
 
 /**

@@ -23,12 +23,21 @@ var App = function() {
 
     var categoryScroll = {
         scrollCat: function() {
-            var sidebarWrapper = document.querySelectorAll('.sidebar-wrapper li.active')[0];
-            var sidebarWrapperTop = sidebarWrapper.offsetTop - 12;
-            setTimeout(() => {
-                const scroll = document.querySelector('.menu-categories');
-                scroll.scrollTop = sidebarWrapperTop;
-            }, 50);
+            try {
+                var sidebarWrapper = document.querySelector('.sidebar-wrapper li.active');
+                
+                if (sidebarWrapper) {
+                    var sidebarWrapperTop = sidebarWrapper.offsetTop - 12;
+                    setTimeout(() => {
+                        const scroll = document.querySelector('.menu-categories');
+                        if (scroll) {
+                            scroll.scrollTop = sidebarWrapperTop;
+                        }
+                    }, 50);
+                }
+            } catch (error) {
+                console.warn('Error in categoryScroll.scrollCat:', error);
+            }
         }
     }
 
