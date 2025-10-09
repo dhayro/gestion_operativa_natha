@@ -1,3 +1,4 @@
+
 {{-- @extends('layouts.app') --}}
 
 {{-- @section('sidebar') --}}
@@ -47,7 +48,75 @@
             </li>
 
             <li class="menu menu-heading">
-                <div class="heading"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-minus"><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>APPLICATIONS</span></div>
+                <div class="heading"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-minus"><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>ADMIN</span></div>
+            </li>
+
+            <li class="menu {{ ($catName === 'maestros') ? 'active' : '' }}">
+    <a href="#maestros" data-bs-toggle="collapse" aria-expanded="{{ ($catName === 'maestros') ? 'true' : 'false' }}" class="dropdown-toggle">
+        <div class="">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-database"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"></path><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"></path></svg>
+            <span>Maestros</span>
+        </div>
+        <div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </div>
+    </a>
+    <ul class="collapse submenu list-unstyled {{ ($catName === 'maestros') ? 'show' : '' }}" id="maestros" data-bs-parent="#accordionExample">
+        <li class="{{ Request::routeIs('ubigeo.index') ? 'active' : '' }}">
+            <a href="{{ route('ubigeo.index') }}">Ubigeo</a>
+        </li>
+        <li class="{{ Request::routeIs('categorias.index') ? 'active' : '' }}">
+            <a href="{{ route('categorias.index') }}">Categorías</a>
+        </li>
+        <li class="{{ Request::routeIs('unidad_medidas.index') ? 'active' : '' }}">
+            <a href="{{ route('unidad_medidas.index') }}">Unidades de Medida</a>
+        </li>
+        <li class="{{ Request::routeIs('cargos.index') ? 'active' : '' }}">
+            <a href="{{ route('cargos.index') }}">Cargos</a>
+        </li>
+        <li class="{{ Request::routeIs('areas.index') ? 'active' : '' }}">
+            <a href="{{ route('areas.index') }}">Áreas</a>
+        </li>
+        <li class="{{ Request::routeIs('empleados.index') ? 'active' : '' }}">
+            <a href="{{ route('empleados.index') }}">Empleados</a>
+        </li>
+        <li class="{{ Request::routeIs('materiales.index') ? 'active' : '' }}">
+            <a href="{{ route('materiales.index') }}">Materiales</a>
+        </li>
+        <li class="{{ Request::routeIs('proveedores.index') ? 'active' : '' }}">
+            <a href="{{ route('proveedores.index') }}">Proveedores</a>
+        </li>
+        <li class="{{ Request::routeIs('cuadrillas.index') ? 'active' : '' }}">
+            <a href="{{ route('cuadrillas.index') }}">Cuadrillas</a>
+        </li>
+        <li class="{{ Request::routeIs('tipo_combustibles.index') ? 'active' : '' }}">
+            <a href="{{ route('tipo_combustibles.index') }}">Tipos de Combustible</a>
+        </li>
+        <li class="{{ Request::routeIs('vehiculos.index') ? 'active' : '' }}">
+            <a href="{{ route('vehiculos.index') }}">Vehículos</a>
+        </li>
+        <li class="{{ Request::routeIs('soats.index') ? 'active' : '' }}">
+            <a href="{{ route('soats.index') }}">SOATs</a>
+        </li>
+        {{-- Puedes agregar más opciones aquí --}}
+    </ul>
+</li>
+
+            <li class="menu {{ ($catName === 'operativa') ? 'active' : '' }}">
+                <a href="#operativa" data-bs-toggle="collapse" aria-expanded="{{ ($catName === 'operativa') ? 'true' : 'false' }}" class="dropdown-toggle">
+                    <div class="">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-truck"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+                        <span>Gestión Operativa</span>
+                    </div>
+                    <div>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </div>
+                </a>
+                <ul class="collapse submenu list-unstyled {{ ($catName === 'operativa') ? 'show' : '' }}" id="operativa" data-bs-parent="#accordionExample">
+                    <li class="{{ Request::routeIs('papeletas.index') ? 'active' : '' }}">
+                        <a href="{{ route('papeletas.index') }}">Papeletas de Trabajo</a>
+                    </li>
+                </ul>
             </li>
 
             <li class="menu {{ Request::routeIs('calendar') ? 'active' : '' }}">

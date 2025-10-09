@@ -1,21 +1,21 @@
 @extends('layouts.app')
 
 @section('styles')
+    <!-- ...existing code... -->
     <link rel="stylesheet" href="{{asset('plugins/src/table/datatable/datatables.css')}}">
-    @vite(['resources/scss/light/plugins/table/datatable/dt-global_style.scss'])
-    @vite(['resources/scss/light/plugins/table/datatable/custom_dt_custom.scss'])
-    @vite(['resources/scss/dark/plugins/table/datatable/dt-global_style.scss'])
-    @vite(['resources/scss/dark/plugins/table/datatable/custom_dt_custom.scss'])
-    
-    <!-- SweetAlert2 -->
     <link rel="stylesheet" href="{{asset('plugins/src/sweetalerts2/sweetalerts2.css')}}">
-    @vite(['resources/scss/light/plugins/sweetalerts2/custom-sweetalert.scss'])
-    @vite(['resources/scss/dark/plugins/sweetalerts2/custom-sweetalert.scss'])
 
-    <style>
+    <!-- <link rel="stylesheet" href="{{asset('plugins/src/table/datatable/responsive.dataTables.min.css')}}"> -->
+    <!-- ...existing code... -->
+     <style>
         .modal-content {
             background: #fff !important;
         }
+        .full-height-row {
+        min-height: 75vh; /* Ajusta 180px según el alto de tu header/footer */
+        display: flex;
+        align-items: stretch;
+    }
     </style>
 @endsection
 
@@ -37,7 +37,7 @@
     <div class="col-lg-12">
         <div class="statbox widget box box-shadow">
             <div class="widget-content widget-content-area">
-                <div class="table-responsive">
+                <div class="table-responsive full-height-row">
                     <table id="zero-config" class="table table-striped table-bordered table-hover" style="width:100%">
                         <thead>
                             <tr>
@@ -107,6 +107,8 @@
 
     <!-- DataTables -->
     <script src="{{asset('plugins/src/table/datatable/datatables.js')}}"></script>
+    <!-- <script src="{{asset('plugins/src/table/datatable/dataTables.responsive.min.js')}}"></script> -->
+    <!-- <script src="{{asset('plugins/src/table/datatable/responsive.bootstrap5.min.js')}}"></script> -->
     <script src="{{asset('plugins/src/table/datatable/spanish.js')}}"></script>
 
     @vite(['resources/scss/light/plugins/table/datatable/custom_dt_custom.scss'])
@@ -351,6 +353,7 @@
             window.ubigeoTable = $('#zero-config').DataTable({
                 "processing": true,
                 "serverSide": true,
+                "responsive": true, // <-- Agrega esta línea
                 "ajax": {
                     "url": "{{ route('ubigeo.data') }}",
                     "type": "GET"
@@ -422,9 +425,14 @@
             // Guardar registro
             $('#ubigeoForm').on('submit', function(e) {
                 e.preventDefault();
-                
+
+                // Deshabilitar el botón de guardar INMEDIATAMENTE
+                var $submitBtn = $(this).find('button[type="submit"]');
+                $submitBtn.prop('disabled', true);
+
                 // Validar formulario antes de enviar
                 if (!validateForm()) {
+                    $submitBtn.prop('disabled', false); // Rehabilitar si la validación falla
                     Swal.fire({
                         title: 'Campos Requeridos',
                         text: 'Por favor, complete todos los campos obligatorios correctamente.',
@@ -433,10 +441,10 @@
                     });
                     return;
                 }
-                
+
                 var form = $(this);
                 var url = form.attr('action');
-                
+
                 // Preparar datos del formulario correctamente
                 var formData = new FormData();
                 formData.append('_token', $('input[name="_token"]').val());
@@ -444,12 +452,12 @@
                 formData.append('codigo_postal', $('#codigo_postal').val().trim());
                 formData.append('dependencia_id', $('#dependencia_id').val());
                 formData.append('estado', $('#estado').is(':checked') ? '1' : '0');
-                
+
                 // Si es edición, agregar método PUT
                 if ($('#method-field').length > 0) {
                     formData.append('_method', 'PUT');
                 }
-                
+
                 // Mostrar loading
                 Swal.fire({
                     title: 'Guardando...',
@@ -475,14 +483,15 @@
                         window.ubigeoTable.ajax.reload(); // Usar la variable global
                         form[0].reset();
                         $('#method-field').remove();
+                        $submitBtn.prop('disabled', false);
                     },
                     error: function(xhr) {
                         console.error('Error al guardar:', xhr);
-                        
+
                         // Limpiar errores previos
                         $('.is-invalid').removeClass('is-invalid');
                         $('.invalid-feedback').remove();
-                        
+
                         if (xhr.status === 422) {
                             // Errores de validación
                             var errors = xhr.responseJSON.errors;
@@ -491,7 +500,7 @@
                                 input.addClass('is-invalid');
                                 input.after('<div class="invalid-feedback">' + messages[0] + '</div>');
                             });
-                            
+
                             Swal.fire(
                                 'Error de Validación',
                                 'Por favor, corrija los errores en el formulario.',
@@ -504,6 +513,7 @@
                                 'error'
                             );
                         }
+                        $submitBtn.prop('disabled', false);
                     }
                 });
             });
@@ -608,6 +618,8 @@ window.editUbigeo = function(id) {
 };
 
 window.deleteUbigeo = function(id) {
+        console.log('deleteUbigeo llamado con id:', id); // <-- Agrega esto
+
     Swal.fire({
         title: '¿Está seguro?',
         text: "Esta acción no se puede deshacer",

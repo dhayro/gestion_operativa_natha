@@ -21,6 +21,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'empleado_id',
+        'perfil',
+        'estado',
     ];
 
     /**
@@ -43,6 +46,23 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'estado' => 'boolean',
         ];
+    }
+
+    /**
+     * Relación con el empleado
+     */
+    public function empleado()
+    {
+        return $this->belongsTo(Empleado::class);
+    }
+
+    /**
+     * Obtener las cuadrillas del usuario a través del empleado
+     */
+    public function cuadrillas()
+    {
+        return $this->empleado ? $this->empleado->cuadrillasActivas() : collect();
     }
 }
