@@ -4,7 +4,21 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
-use App\Http\Controllers\UbigeoController; 
+use App\Http\Controllers\UbigeoController;
+use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\EmpleadoController;
+use App\Http\Controllers\AreaController;
+use App\Http\Controllers\UnidadMedidaController;
+use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\CargoController;
+use App\Http\Controllers\ProveedorController;
+use App\Http\Controllers\CuadrillaController;
+use App\Http\Controllers\CuadrillaEmpleadoController;
+use App\Http\Controllers\TipoCombustibleController; 
+use App\Http\Controllers\VehiculoController;
+use App\Http\Controllers\SoatController; 
+use App\Http\Controllers\AsignacionVehiculoController; 
+use App\Http\Controllers\PapeletaController; 
 
 Route::get('/test-email', function () {
     try {
@@ -46,12 +60,118 @@ Route::get('/', function () {
 });
 
 
+// Materiales CRUD (rutas agrupadas igual que empleados)
+Route::prefix('materiales')->group(function () {
+    Route::get('/data', [MaterialController::class, 'getData'])->name('materiales.data');
+    Route::get('/', [MaterialController::class, 'index'])->name('materiales.index');
+    Route::post('/', [MaterialController::class, 'store'])->name('materiales.store');
+    Route::get('/{material}', [MaterialController::class, 'show'])->name('materiales.show');
+    Route::put('/{material}', [MaterialController::class, 'update'])->name('materiales.update');
+    Route::delete('/{material}', [MaterialController::class, 'destroy'])->name('materiales.destroy');
+});
+
+
+// Rutas CRUD para Empleados
+Route::prefix('empleados')->group(function () {
+    Route::get('/data', [EmpleadoController::class, 'getData'])->name('empleados.data');
+    Route::get('/', [EmpleadoController::class, 'index'])->name('empleados.index');
+    Route::post('/', [EmpleadoController::class, 'store'])->name('empleados.store');
+    Route::get('/{empleado}', [EmpleadoController::class, 'show'])->name('empleados.show');
+    Route::put('/{empleado}', [EmpleadoController::class, 'update'])->name('empleados.update');
+    Route::delete('/{empleado}', [EmpleadoController::class, 'destroy'])->name('empleados.destroy');
+    
+    // Rutas para gestión de usuarios de empleados
+    Route::get('/{empleado}/usuario', [EmpleadoController::class, 'getUsuario'])->name('empleados.usuario.get');
+    Route::post('/{empleado}/usuario', [EmpleadoController::class, 'crearUsuario'])->name('empleados.usuario.crear');
+    Route::put('/{empleado}/usuario', [EmpleadoController::class, 'actualizarUsuario'])->name('empleados.usuario.actualizar');
+    Route::delete('/{empleado}/usuario', [EmpleadoController::class, 'eliminarUsuario'])->name('empleados.usuario.eliminar');
+});
+
+// Rutas CRUD para Áreas
+Route::prefix('areas')->group(function () {
+    Route::get('/data', [AreaController::class, 'getData'])->name('areas.data');
+    Route::get('/api/select', [AreaController::class, 'getAreasForSelect'])->name('areas.select');
+    Route::get('/', [AreaController::class, 'index'])->name('areas.index');
+    Route::post('/', [AreaController::class, 'store'])->name('areas.store');
+    Route::get('/{area}', [AreaController::class, 'show'])->name('areas.show');
+    Route::put('/{area}', [AreaController::class, 'update'])->name('areas.update');
+    Route::delete('/{area}', [AreaController::class, 'destroy'])->name('areas.destroy');
+});
+
+// Rutas CRUD para Unidades de Medida
+Route::prefix('unidad_medidas')->group(function () {
+    Route::get('/data', [UnidadMedidaController::class, 'getData'])->name('unidad_medidas.data');
+    Route::get('/api/select', [UnidadMedidaController::class, 'getUnidadesForSelect'])->name('unidades.select');
+    Route::get('/', [UnidadMedidaController::class, 'index'])->name('unidad_medidas.index');
+    Route::post('/', [UnidadMedidaController::class, 'store'])->name('unidad_medidas.store');
+    Route::get('/{unidad_medida}', [UnidadMedidaController::class, 'show'])->name('unidad_medidas.show');
+    Route::put('/{unidad_medida}', [UnidadMedidaController::class, 'update'])->name('unidad_medidas.update');
+    Route::delete('/{unidad_medida}', [UnidadMedidaController::class, 'destroy'])->name('unidad_medidas.destroy');
+});
+
+
+// Rutas CRUD para Categorias
+Route::prefix('categorias')->group(function () {
+    Route::get('/data', [CategoriaController::class, 'getData'])->name('categorias.data');
+    Route::get('/api/select', [CategoriaController::class, 'getCategoriasForSelect'])->name('categorias.select');
+    Route::get('/', [CategoriaController::class, 'index'])->name('categorias.index');
+    Route::post('/', [CategoriaController::class, 'store'])->name('categorias.store');
+    Route::get('/{categoria}', [CategoriaController::class, 'show'])->name('categorias.show');
+    Route::put('/{categoria}', [CategoriaController::class, 'update'])->name('categorias.update');
+    Route::delete('/{categoria}', [CategoriaController::class, 'destroy'])->name('categorias.destroy');
+});
+
+// Rutas CRUD para Cargos
+Route::prefix('cargos')->group(function () {
+    Route::get('/data', [CargoController::class, 'getData'])->name('cargos.data');
+    Route::get('/api/select', [CargoController::class, 'getCargosForSelect'])->name('cargos.select');
+    Route::get('/', [CargoController::class, 'index'])->name('cargos.index');
+    Route::post('/', [CargoController::class, 'store'])->name('cargos.store');
+    Route::get('/{cargo}', [CargoController::class, 'show'])->name('cargos.show');
+    Route::put('/{cargo}', [CargoController::class, 'update'])->name('cargos.update');
+    Route::delete('/{cargo}', [CargoController::class, 'destroy'])->name('cargos.destroy');
+});
+
+// Rutas CRUD para Tipos de Combustible
+Route::prefix('tipo_combustibles')->group(function () {
+    Route::get('/data', [TipoCombustibleController::class, 'getData'])->name('tipo_combustibles.data');
+    Route::get('/api/select', [TipoCombustibleController::class, 'getTiposCombustibleForSelect'])->name('tipos_combustible.select');
+    Route::get('/', [TipoCombustibleController::class, 'index'])->name('tipo_combustibles.index');
+    Route::post('/', [TipoCombustibleController::class, 'store'])->name('tipo_combustibles.store');
+    Route::get('/{tipoCombustible}', [TipoCombustibleController::class, 'show'])->name('tipo_combustibles.show');
+    Route::put('/{tipoCombustible}', [TipoCombustibleController::class, 'update'])->name('tipo_combustibles.update');
+    Route::delete('/{tipoCombustible}', [TipoCombustibleController::class, 'destroy'])->name('tipo_combustibles.destroy');
+});
+
+// Rutas CRUD para Vehículos
+Route::prefix('vehiculos')->group(function () {
+    Route::get('/data', [VehiculoController::class, 'getData'])->name('vehiculos.data');
+    Route::get('/api/select', [VehiculoController::class, 'getVehiculosForSelect'])->name('vehiculos.select');
+    Route::get('/{vehiculo}/soats', [VehiculoController::class, 'getSoats'])->name('vehiculos.soats');
+    Route::get('/{vehiculo}/soats/data', [VehiculoController::class, 'getSoatsData'])->name('vehiculos.soats.data');
+    Route::get('/', [VehiculoController::class, 'index'])->name('vehiculos.index');
+    Route::post('/', [VehiculoController::class, 'store'])->name('vehiculos.store');
+    Route::get('/{vehiculo}', [VehiculoController::class, 'show'])->name('vehiculos.show');
+    Route::put('/{vehiculo}', [VehiculoController::class, 'update'])->name('vehiculos.update');
+    Route::delete('/{vehiculo}', [VehiculoController::class, 'destroy'])->name('vehiculos.destroy');
+});
+
+// Rutas CRUD para SOATs
+Route::prefix('soats')->group(function () {
+    Route::get('/data', [SoatController::class, 'getData'])->name('soats.data');
+    Route::get('/', [SoatController::class, 'index'])->name('soats.index');
+    Route::post('/', [SoatController::class, 'store'])->name('soats.store');
+    Route::get('/{soat}', [SoatController::class, 'show'])->name('soats.show');
+    Route::put('/{soat}', [SoatController::class, 'update'])->name('soats.update');
+    Route::delete('/{soat}', [SoatController::class, 'destroy'])->name('soats.destroy');
+});
+
+
 
 Route::prefix('ubigeo')->group(function () {
     // Rutas adicionales
     Route::get('/data', [UbigeoController::class, 'getData'])->name('ubigeo.data');
     Route::get('/api/select', [UbigeoController::class, 'getUbigeosForSelect'])->name('ubigeo.select');
-    // Rutas individuales con nombres consistentes
     Route::get('/', [UbigeoController::class, 'index'])->name('ubigeo.index');
     Route::post('/', [UbigeoController::class, 'store'])->name('ubigeo.store');
     Route::get('/{ubigeo}', [UbigeoController::class, 'show'])->name('ubigeo.show');
@@ -59,6 +179,79 @@ Route::prefix('ubigeo')->group(function () {
     Route::delete('/{ubigeo}', [UbigeoController::class, 'destroy'])->name('ubigeo.destroy');
     
     
+});
+
+// Rutas para Proveedores
+Route::prefix('proveedores')->group(function () {
+    Route::get('/data', [ProveedorController::class, 'getData'])->name('proveedores.data');
+    Route::get('/api/select', [ProveedorController::class, 'getProveedoresForSelect'])->name('proveedores.select');
+    Route::get('/', [ProveedorController::class, 'index'])->name('proveedores.index');
+    Route::post('/', [ProveedorController::class, 'store'])->name('proveedores.store');
+    Route::get('/{proveedor}', [ProveedorController::class, 'show'])->name('proveedores.show');
+    Route::put('/{proveedor}', [ProveedorController::class, 'update'])->name('proveedores.update');
+    Route::delete('/{proveedor}', [ProveedorController::class, 'destroy'])->name('proveedores.destroy');
+});
+
+// Rutas para Cuadrillas
+Route::prefix('cuadrillas')->group(function () {
+    Route::get('/data', [CuadrillaController::class, 'getData'])->name('cuadrillas.data');
+    Route::get('/api/select', [CuadrillaController::class, 'select'])->name('cuadrillas.select');
+    Route::get('/', [CuadrillaController::class, 'index'])->name('cuadrillas.index');
+    Route::post('/', [CuadrillaController::class, 'store'])->name('cuadrillas.store');
+    Route::get('/{cuadrilla}', [CuadrillaController::class, 'show'])->name('cuadrillas.show');
+    Route::put('/{cuadrilla}', [CuadrillaController::class, 'update'])->name('cuadrillas.update');
+    Route::delete('/{cuadrilla}', [CuadrillaController::class, 'destroy'])->name('cuadrillas.destroy');
+    
+    // Rutas para gestión de empleados en cuadrillas
+    Route::get('/{cuadrilla}/empleados/data', [CuadrillaEmpleadoController::class, 'getEmpleadosAsignados'])->name('cuadrillas.empleados.data');
+    Route::get('/{cuadrilla}/empleados/disponibles', [CuadrillaEmpleadoController::class, 'getEmpleadosDisponibles'])->name('cuadrillas.empleados.disponibles');
+    Route::post('/empleados/asignar', [CuadrillaEmpleadoController::class, 'asignarEmpleado'])->name('cuadrillas.empleados.asignar');
+    Route::put('/empleados/{asignacion}/toggle', [CuadrillaEmpleadoController::class, 'toggleEstado'])->name('cuadrillas.empleados.toggle');
+    Route::delete('/empleados/{asignacion}', [CuadrillaEmpleadoController::class, 'removeEmpleado'])->name('cuadrillas.empleados.remove');
+    
+    // Rutas para gestión de vehículos en cuadrillas
+    Route::get('/{cuadrilla}/vehiculos/data', [AsignacionVehiculoController::class, 'getVehiculosAsignados'])->name('cuadrillas.vehiculos.data');
+    Route::get('/{cuadrilla}/vehiculos/disponibles', [AsignacionVehiculoController::class, 'getVehiculosDisponibles'])->name('cuadrillas.vehiculos.disponibles');
+    Route::get('/{cuadrilla}/empleados-chofer', [AsignacionVehiculoController::class, 'getEmpleadosChofer'])->name('cuadrillas.empleados.chofer');
+    Route::post('/vehiculos/asignar', [AsignacionVehiculoController::class, 'asignarVehiculo'])->name('cuadrillas.vehiculos.asignar');
+    Route::put('/vehiculos/{asignacion}/toggle', [AsignacionVehiculoController::class, 'toggleEstado'])->name('cuadrillas.vehiculos.toggle');
+    Route::delete('/vehiculos/{asignacion}', [AsignacionVehiculoController::class, 'removeVehiculo'])->name('cuadrillas.vehiculos.remove');
+});
+
+// Rutas CRUD para Asignación de Vehículos
+Route::prefix('asignacion-vehiculos')->group(function () {
+    Route::get('/data', [AsignacionVehiculoController::class, 'getData'])->name('asignacion_vehiculos.data');
+    Route::get('/', [AsignacionVehiculoController::class, 'index'])->name('asignacion_vehiculos.index');
+    Route::post('/', [AsignacionVehiculoController::class, 'store'])->name('asignacion_vehiculos.store');
+    Route::get('/{asignacion}', [AsignacionVehiculoController::class, 'show'])->name('asignacion_vehiculos.show');
+    Route::put('/{asignacion}', [AsignacionVehiculoController::class, 'update'])->name('asignacion_vehiculos.update');
+    Route::delete('/{asignacion}', [AsignacionVehiculoController::class, 'destroy'])->name('asignacion_vehiculos.destroy');
+});
+
+// Rutas CRUD para Papeletas
+Route::prefix('papeletas')->group(function () {
+    Route::get('/data', [PapeletaController::class, 'getData'])->name('papeletas.data');
+    Route::get('/asignaciones-disponibles', [PapeletaController::class, 'getAsignacionesDisponibles']);
+    Route::get('/ultimo-kilometraje/{asignacionVehiculoId}', [PapeletaController::class, 'getUltimoKilometraje']);
+    Route::get('/empleados-disponibles', [PapeletaController::class, 'empleadosDisponibles']);
+    Route::get('/cuadrilla-info/{asignacionVehiculoId}', [PapeletaController::class, 'cuadrillaInfo']);
+    Route::get('/', [PapeletaController::class, 'index'])->name('papeletas.index');
+    Route::post('/', [PapeletaController::class, 'store'])->name('papeletas.store');
+    Route::get('/{papeleta}', [PapeletaController::class, 'show'])->name('papeletas.show');
+    Route::put('/{papeleta}', [PapeletaController::class, 'update'])->name('papeletas.update');
+    Route::delete('/{papeleta}', [PapeletaController::class, 'destroy'])->name('papeletas.destroy');
+    
+    // Rutas para gestión de viajes
+    Route::post('/{papeleta}/iniciar', [PapeletaController::class, 'iniciarViaje'])->name('papeletas.iniciar');
+    Route::post('/{papeleta}/finalizar', [PapeletaController::class, 'finalizarViaje'])->name('papeletas.finalizar');
+    Route::post('/{papeleta}/anular', [PapeletaController::class, 'anular'])->name('papeletas.anular');
+    
+    // Rutas para impresión PDF
+    Route::get('/{papeleta}/pdf', [PapeletaController::class, 'imprimirPdf'])->name('papeletas.pdf');
+    Route::get('/{papeleta}/pdf-doble', [PapeletaController::class, 'imprimirDosPdf'])->name('papeletas.pdf.doble');
+    Route::get('/{papeleta}/pdf-doble-horizontal', [PapeletaController::class, 'imprimirDobleHorizontal'])->name('papeletas.pdf.doble.horizontal');
+    Route::get('/{papeleta}/preview', [PapeletaController::class, 'previsualizarPdf'])->name('papeletas.preview');
+    Route::get('/{papeleta}/preview-doble', [PapeletaController::class, 'previsualizarPdfDoble'])->name('papeletas.preview.doble');
 });
 
 /**
@@ -1379,4 +1572,10 @@ Route::prefix('authentication')->group(function () {
     
 });
 
+// Rutas globales de API para Select2
+Route::get('/api/select/tipo-combustibles', [TipoCombustibleController::class, 'getTiposCombustibleForSelect']);
+Route::get('/api/select/vehiculos', [VehiculoController::class, 'getVehiculosForSelect']);
+Route::get('/api/select/proveedores', [ProveedorController::class, 'getProveedoresForSelect']);
+
 });
+

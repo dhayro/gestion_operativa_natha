@@ -22,6 +22,9 @@ return new class extends Migration
             $table->boolean('estado')->default(true);
             $table->rememberToken();
             $table->timestamps();
+
+            // Agregar clave foránea para empleado_id
+            $table->foreign('empleado_id')->references('id')->on('empleados')->onDelete('set null');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
