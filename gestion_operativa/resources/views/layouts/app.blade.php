@@ -171,13 +171,17 @@
 
     <!-- BEGIN GLOBAL MANDATORY SCRIPTS -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{asset('plugins/src/bootstrap/js/bootstrap.bundle.min.js')}}"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <script src="{{asset('plugins/src/bootstrap/js/bootstrap.bundle.min.js')}}"></script>
     <script src="{{asset('plugins/src/perfect-scrollbar/perfect-scrollbar.min.js')}}"></script>
     <script src="{{asset('plugins/src/mousetrap/mousetrap.min.js')}}"></script>
     <script src="{{asset('plugins/src/waves/waves.min.js')}}"></script>
     <script src="{{asset('plugins/src/highlight/highlight.pack.js')}}"></script>
+    <script src="{{asset('plugins/src/table/datatable/datatables.js')}}"></script>
+    <script src="{{asset('plugins/src/sweetalerts2/sweetalerts2.min.js')}}"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
     @vite(['resources/layouts/semi-dark-menu/app.js'])
     
     @isset($scrollspy)

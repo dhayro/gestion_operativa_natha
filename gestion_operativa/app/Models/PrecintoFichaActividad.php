@@ -8,4 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 class PrecintoFichaActividad extends Model
 {
     use HasFactory;
+
+    protected $table = 'precinto_ficha_actividades';
 }

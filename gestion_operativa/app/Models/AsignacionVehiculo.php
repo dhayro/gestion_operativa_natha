@@ -47,4 +47,12 @@ class AsignacionVehiculo extends Model
     {
         return $this->belongsTo(Empleado::class);
     }
+
+    /**
+     * Relación con Papeletas
+     */
+    public function papeletas()
+    {
+        return $this->hasMany(Papeleta::class, 'asignacion_vehiculo_id');
+    }
 }

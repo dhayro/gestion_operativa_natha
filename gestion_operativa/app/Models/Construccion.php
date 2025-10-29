@@ -8,4 +8,17 @@ use Illuminate\Database\Eloquent\Model;
 class Construccion extends Model
 {
     use HasFactory;
+
+    protected $table = 'construccions';
+    
+    protected $fillable = [
+        'nombre',
+        'estado'
+    ];
+
+    protected $casts = [
+        'estado' => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
 }

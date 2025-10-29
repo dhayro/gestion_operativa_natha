@@ -13,7 +13,7 @@ class CreateMedidoresFichaActividadTable extends Migration
      */
     public function up()
     {
-        Schema::create('medidor_ficha_actividads', function (Blueprint $table) {
+        Schema::create('medidor_ficha_actividades', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('ficha_actividad_id');
             $table->unsignedBigInteger('medidor_id');
@@ -40,6 +40,6 @@ class CreateMedidoresFichaActividadTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('medidor_ficha_actividads');
+        Schema::dropIfExists('medidor_ficha_actividades');
     }
 }

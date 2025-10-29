@@ -8,4 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 class FotoFichaActividad extends Model
 {
     use HasFactory;
+
+    protected $table = 'foto_ficha_actividades';
 }

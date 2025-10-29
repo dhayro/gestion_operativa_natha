@@ -23,40 +23,45 @@ class UbigeoController extends Controller
     public function getData(Request $request)
     {
         if ($request->ajax()) {
-            // Optimización: Usar JOIN para evitar N+1 queries
-            $ubigeos = Ubigeo::select([
-                'ubigeos.id', 
-                'ubigeos.nombre', 
-                'ubigeos.codigo_postal', 
-                'ubigeos.dependencia_id', 
-                'ubigeos.estado',
-                'dependencias.nombre as dependencia_nombre'
-            ])
-            ->leftJoin('ubigeos as dependencias', 'ubigeos.dependencia_id', '=', 'dependencias.id');
-
+            // Obtener ubigeos padres o hijos según el parámetro dependencia_id
+            $query = Ubigeo::select(['id', 'nombre', 'codigo_postal', 'dependencia_id', 'estado']);
+            
+            if ($request->has('dependencia_id') && $request->get('dependencia_id') != null) {
+                // Mostrar solo hijos del padre especificado
+                $query->where('dependencia_id', $request->get('dependencia_id'));
+            } else {
+                // Mostrar solo ubigeos padres (sin dependencia)
+                $query->whereNull('dependencia_id');
+            }
+            
+            $ubigeos = $query->orderBy('nombre');
+            
             return DataTables::of($ubigeos)
                 ->addIndexColumn()
-                ->addColumn('dependencia_display', function ($row) {
-                    return $row->dependencia_nombre ?? 'Sin dependencia';
+                ->addColumn('codigo_postal_display', function ($row) {
+                    return $row->codigo_postal ?? '-';
                 })
                 ->addColumn('estado_badge', function ($row) {
-                    if ($row->estado) {
-                        return '<span class="badge badge-success">Activo</span>';
-                    } else {
-                        return '<span class="badge badge-danger">Inactivo</span>';
-                    }
+                    return $row->estado
+                        ? '<span class="badge badge-success">Activo</span>'
+                        : '<span class="badge badge-danger">Inactivo</span>';
                 })
                 ->addColumn('action', function ($row) {
-                    return '<div class="dropdown">
+                    $html = '<div class="dropdown">
                                 <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink' . $row->id . '" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
                                 </a>
                                 <div class="dropdown-menu" aria-labelledby="dropdownMenuLink' . $row->id . '">
-                                    <a class="dropdown-item" href="javascript:void(0);" onclick="viewUbigeo(' . $row->id . ')">Ver</a>
                                     <a class="dropdown-item" href="javascript:void(0);" onclick="editUbigeo(' . $row->id . ')">Editar</a>
                                     <a class="dropdown-item" href="javascript:void(0);" onclick="deleteUbigeo(' . $row->id . ')">Eliminar</a>
+                                    <hr class="dropdown-divider">
+                                    <a class="dropdown-item" href="javascript:void(0);" onclick="verSububigeos(' . $row->id . ', \'' . addslashes($row->nombre) . '\')">
+                                        <i class="fas fa-eye"></i> Ver Sububigeos
+                                    </a>
                                 </div>
                             </div>';
+                    
+                    return $html;
                 })
                 ->rawColumns(['estado_badge', 'action'])
                 ->make(true);
@@ -65,13 +70,28 @@ class UbigeoController extends Controller
 
     public function store(Request $request)
     {
+        $dependencia_id = $request->get('dependencia_id') ?: null;
+        
         $validatedData = $request->validate([
-            'nombre' => 'required|string|max:100',
+            'nombre' => [
+                'required',
+                'string',
+                'max:100',
+                function ($attribute, $value, $fail) use ($dependencia_id) {
+                    // Validar que el nombre sea único dentro del mismo padre
+                    $exists = Ubigeo::where('nombre', $value)
+                        ->where('dependencia_id', $dependencia_id)
+                        ->exists();
+                    
+                    if ($exists) {
+                        $fail('Ya existe un ubigeo con este nombre en este nivel.');
+                    }
+                }
+            ],
             'codigo_postal' => 'nullable|string|max:10',
             'dependencia_id' => [
                 'nullable',
                 'exists:ubigeos,id',
-                // Evitar referencias circulares
                 function ($attribute, $value, $fail) use ($request) {
                     if ($value && $request->has('id') && $value == $request->id) {
                         $fail('Un ubigeo no puede ser dependiente de sí mismo.');
@@ -91,6 +111,7 @@ class UbigeoController extends Controller
         ]);
 
         try {
+            $validatedData['dependencia_id'] = $dependencia_id;
             $ubigeo = Ubigeo::create($validatedData);
             
             return response()->json([
@@ -144,9 +165,25 @@ class UbigeoController extends Controller
     public function update(Request $request, $id)
     {
         $ubigeo = Ubigeo::findOrFail($id);
+        $dependencia_id = $request->get('dependencia_id') ?: null;
         
         $validatedData = $request->validate([
-            'nombre' => 'required|string|max:100',
+            'nombre' => [
+                'required',
+                'string',
+                'max:100',
+                function ($attribute, $value, $fail) use ($dependencia_id, $id) {
+                    // Validar que el nombre sea único dentro del mismo padre (excepto el registro actual)
+                    $exists = Ubigeo::where('nombre', $value)
+                        ->where('dependencia_id', $dependencia_id)
+                        ->where('id', '!=', $id)
+                        ->exists();
+                    
+                    if ($exists) {
+                        $fail('Ya existe un ubigeo con este nombre en este nivel.');
+                    }
+                }
+            ],
             'codigo_postal' => 'nullable|string|max:10',
             'dependencia_id' => [
                 'nullable',
@@ -176,6 +213,7 @@ class UbigeoController extends Controller
         ]);
 
         try {
+            $validatedData['dependencia_id'] = $dependencia_id;
             $ubigeo->update($validatedData);
             
             return response()->json([

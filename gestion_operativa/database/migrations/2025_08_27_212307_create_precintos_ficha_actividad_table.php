@@ -13,8 +13,9 @@ class CreatePrecintosFichaActividadTable extends Migration
      */
     public function up()
     {
-        Schema::create('precinto_ficha_actividads', function (Blueprint $table) {
+        Schema::create('precinto_ficha_actividades', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('ficha_actividad_id');
             $table->unsignedBigInteger('material_id');
             $table->unsignedBigInteger('medidor_ficha_actividad_id');
             $table->enum('tipo', ['tapa', 'caja', 'bornera']);
@@ -26,8 +27,9 @@ class CreatePrecintosFichaActividadTable extends Migration
     
             $table->foreign('usuario_creacion_id')->references('id')->on('users')->onDelete('restrict');
             $table->foreign('usuario_actualizacion_id')->references('id')->on('users')->onDelete('restrict');
+            $table->foreign('ficha_actividad_id')->references('id')->on('ficha_actividads')->onDelete('restrict');
             $table->foreign('material_id')->references('id')->on('materials')->onDelete('restrict');
-            $table->foreign('medidor_ficha_actividad_id')->references('id')->on('medidor_ficha_actividads')->onDelete('restrict');
+            $table->foreign('medidor_ficha_actividad_id')->references('id')->on('medidor_ficha_actividades')->onDelete('restrict');
         });
     }
 
@@ -38,6 +40,6 @@ class CreatePrecintosFichaActividadTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('precinto_ficha_actividads');
+        Schema::dropIfExists('precinto_ficha_actividades');
     }
 }
