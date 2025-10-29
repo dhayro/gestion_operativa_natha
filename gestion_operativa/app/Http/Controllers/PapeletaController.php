@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Papeleta;
 use App\Models\AsignacionVehiculo;
 use App\Models\Empleado;
+use App\Models\DotacionCombustible;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Auth;
@@ -41,7 +42,8 @@ class PapeletaController extends Controller
             $papeletas = Papeleta::with([
                     'asignacionVehiculo.vehiculo',
                     'asignacionVehiculo.cuadrilla',
-                    'usuarioCreacion'
+                    'usuarioCreacion',
+                    'dotaciones' // Agregar relación con dotaciones
                 ])
                 ->paraUsuario($user->id)
                 ->select(['id', 'correlativo', 'asignacion_vehiculo_id', 'fecha', 'destino', 'motivo', 
@@ -68,6 +70,17 @@ class PapeletaController extends Controller
                 })
                 ->addColumn('km_recorridos', function ($row) {
                     return $row->km_recorridos ?? '-';
+                })
+                ->addColumn('dotacion_info', function ($row) {
+                    // Una papeleta solo puede tener una dotación
+                    $dotacion = $row->dotaciones && count($row->dotaciones) > 0 ? $row->dotaciones[0] : null;
+                    
+                    // Solo mostrar el número de vale si tiene dotación
+                    if (!$dotacion) {
+                        return '-';
+                    }
+                    
+                    return $dotacion->numero_vale ?? '-';
                 })
                 ->addColumn('estado_operacion', function ($row) {
                     if (!$row->estado) {
@@ -104,6 +117,14 @@ class PapeletaController extends Controller
                     if ($row->estado) {
                         // Solo si está activa
                         if (!$row->fecha_hora_salida) {
+                            // Papeleta Programada - Puede crear/modificar dotación
+                            $actions .= '<a class="dropdown-item" href="javascript:void(0);" onclick="abrirModalDotacion(' . $row->id . ')">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-droplet me-2">
+                                                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+                                            </svg>
+                                            Modificar Dotación
+                                        </a>';
+                            
                             // Puede iniciar viaje
                             $actions .= '<a class="dropdown-item" href="javascript:void(0);" onclick="iniciarViaje(' . $row->id . ')">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-play me-2">
@@ -137,15 +158,27 @@ class PapeletaController extends Controller
                                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                             <circle cx="12" cy="12" r="3"></circle>
                                         </svg>
-                                        Vista 1
+                                        Previsualizar Vista 1
                                     </a>';
-                        $actions .= '<a class="dropdown-item" href="javascript:void(0);" onclick="imprimirDobleHorizontal(' . $row->id . ')">
+                        $actions .= '<a class="dropdown-item" href="javascript:void(0);" onclick="previsualizarPdfDoble(' . $row->id . ')">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-copy me-2">
                                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                                         </svg>
-                                        Vista 2
+                                        Previsualizar Vista 2
                                     </a>';
+
+                        // Botón de Vale - Solo si existe dotación
+                        if ($row->dotaciones && count($row->dotaciones) > 0) {
+                            $dotacion = $row->dotaciones[0];
+                            $actions .= '<a class="dropdown-item" href="javascript:void(0);" onclick="previsualizarVale(' . $dotacion->id . ')">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text me-2">
+                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                                <polyline points="14 2 14 8 20 8"></polyline>
+                                            </svg>
+                                            Previsualizar Vale
+                                        </a>';
+                        }
 
                         // Separador antes de acciones destructivas
                         if (!$row->completada) {
@@ -192,10 +225,21 @@ class PapeletaController extends Controller
             'personal_adicional' => 'nullable|string|max:1000',
         ]);
 
+        // Obtener miembros_cuadrilla - puede venir como array o null
+        $miembros = $request->input('miembros_cuadrilla');
+        
+        // Convertir a array si viene vacío
+        if (!is_array($miembros)) {
+            $miembros = [];
+        }
+        
+        // Convertir a JSON solo si hay elementos
+        $miembrosJson = !empty($miembros) ? json_encode($miembros) : null;
+
         $papeleta = Papeleta::create([
             'asignacion_vehiculo_id' => $request->asignacion_vehiculo_id,
             'chofer_id' => $request->chofer_id,
-            'miembros_cuadrilla' => $request->miembros_cuadrilla,
+            'miembros_cuadrilla' => $miembrosJson,
             'personal_adicional' => $request->personal_adicional,
             'fecha' => $request->fecha,
             'destino' => $request->destino,
@@ -334,6 +378,7 @@ class PapeletaController extends Controller
         $empleados = $cuadrilla->empleados->map(function($empleado) {
             return [
                 'id' => $empleado->id,
+                'nombre_completo' => trim($empleado->nombre . ' ' . $empleado->apellido),
                 'nombre' => $empleado->nombre,
                 'apellido' => $empleado->apellido,
                 'cargo' => $empleado->cargo->nombre ?? 'Sin cargo'
@@ -386,13 +431,24 @@ class PapeletaController extends Controller
             'personal_adicional' => 'nullable|string'
         ]);
 
+        // Obtener miembros_cuadrilla - puede venir como array o null
+        $miembros = $request->input('miembros_cuadrilla');
+        
+        // Convertir a array si viene vacío
+        if (!is_array($miembros)) {
+            $miembros = [];
+        }
+        
+        // Convertir a JSON solo si hay elementos
+        $miembrosJson = !empty($miembros) ? json_encode($miembros) : null;
+
         $papeleta->update([
             'asignacion_vehiculo_id' => $request->asignacion_vehiculo_id,
             'fecha' => $request->fecha,
             'destino' => $request->destino,
             'motivo' => $request->motivo,
             'km_salida' => $request->km_salida,
-            'miembros_cuadrilla' => $request->miembros_cuadrilla ?? [],
+            'miembros_cuadrilla' => $miembrosJson,
             'personal_adicional' => $request->personal_adicional,
             'usuario_actualizacion_id' => Auth::id()
         ]);
@@ -533,13 +589,43 @@ class PapeletaController extends Controller
         $page = $request->get('page', 1);
         $perPage = 10;
 
+        // Iniciar query base
         $query = AsignacionVehiculo::with(['vehiculo', 'cuadrilla', 'empleado'])
-            ->whereHas('cuadrilla.cuadrillaEmpleados', function ($q) use ($user) {
-                $q->whereHas('empleado.usuario', function ($emp) use ($user) {
-                    $emp->where('id', $user->id);
-                })->where('estado', true);
-            })
             ->where('estado', true);
+
+        // Excluir vehículos que tengan papeletas en estado "programado" o "en curso"
+        // Programado: estado = true, fecha_hora_salida = null
+        // En curso: estado = true, fecha_hora_salida != null, fecha_hora_llegada = null
+        $query->whereDoesntHave('papeletas', function ($q) {
+            $q->where('estado', true)
+              ->where(function ($subQuery) {
+                  // Papeletas programadas (no han salido)
+                  $subQuery->whereNull('fecha_hora_salida')
+                  // O papeletas en curso (salieron pero no llegaron)
+                  ->orWhere(function ($innerQuery) {
+                      $innerQuery->whereNotNull('fecha_hora_salida')
+                                ->whereNull('fecha_hora_llegada');
+                  });
+              });
+        });
+
+        // OPCIÓN 1: Si el usuario tiene empleado asociado (por email), filtrar por sus cuadrillas
+        $empleadoUser = Empleado::where('email', $user->email)->first();
+        
+        if ($empleadoUser) {
+            // Es un operario - mostrar solo vehículos de sus cuadrillas
+            $cuadrillaIds = $empleadoUser->cuadrillaEmpleados()
+                ->where('estado', true)
+                ->pluck('cuadrilla_id')
+                ->toArray();
+            
+            if (!empty($cuadrillaIds)) {
+                $query->whereIn('cuadrilla_id', $cuadrillaIds);
+            } else {
+                return response()->json(['results' => [], 'pagination' => ['more' => false]]);
+            }
+        }
+        // OPCIÓN 2: Si no tiene empleado (gerente/admin), mostrar todos los vehículos
 
         if (!empty($search)) {
             $query->whereHas('vehiculo', function ($q) use ($search) {
@@ -781,6 +867,129 @@ class PapeletaController extends Controller
             ->setPaper('148mm 105mm', 'landscape');
 
         return $pdf->stream('papeleta_doble_horizontal_' . $papeleta->correlativo . '.pdf');
+    }
+
+    /**
+     * Previsualizar Vale de Combustible en navegador
+     */
+    public function previsualizarVale($id)
+    {
+        try {
+            $dotacion = DotacionCombustible::with([
+                'papeleta.asignacionVehiculo.vehiculo',
+                'papeleta.asignacionVehiculo.cuadrilla',
+                'tipoCombustible'
+            ])->findOrFail($id);
+            
+            $papeleta = $dotacion->papeleta;
+
+            $pdf = Pdf::loadView('admin.papeletas.vale_combustible', compact('dotacion', 'papeleta'))
+                ->setPaper('A4', 'portrait');
+
+            return $pdf->stream('vale_' . $dotacion->numero_vale . '.pdf');
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'No se pudo cargar el vale: ' . $e->getMessage()], 404);
+        }
+    }
+
+    /**
+     * Descargar Vale de Combustible
+     */
+    public function descargarVale($id)
+    {
+        try {
+            $dotacion = DotacionCombustible::with([
+                'papeleta.asignacionVehiculo.vehiculo',
+                'papeleta.asignacionVehiculo.cuadrilla',
+                'tipoCombustible'
+            ])->findOrFail($id);
+            
+            $papeleta = $dotacion->papeleta;
+
+            $pdf = Pdf::loadView('admin.papeletas.vale_combustible', compact('dotacion', 'papeleta'))
+                ->setPaper('A4', 'portrait');
+
+            return $pdf->download('vale_' . $dotacion->numero_vale . '.pdf');
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'No se pudo descargar el vale: ' . $e->getMessage()], 404);
+        }
+    }
+
+    /**
+     * Verificar si existe dotación para una papeleta
+     */
+    public function verificarDotacionExiste($id)
+    {
+        try {
+            $papeleta = Papeleta::with('dotaciones')->findOrFail($id);
+            
+            // Verificar si existe al menos una dotación
+            $dotacion = $papeleta->dotaciones && count($papeleta->dotaciones) > 0 ? $papeleta->dotaciones[0] : null;
+            
+            if ($dotacion) {
+                return response()->json([
+                    'existe' => true,
+                    'dotacion' => [
+                        'id' => $dotacion->id,
+                        'tipo_combustible_id' => $dotacion->tipo_combustible_id,
+                        'cantidad_gl' => $dotacion->cantidad_gl,
+                        'precio_unitario' => $dotacion->precio_unitario,
+                        'numero_vale' => $dotacion->numero_vale,
+                        'fecha_carga' => $dotacion->fecha_carga
+                    ]
+                ]);
+            } else {
+                return response()->json([
+                    'existe' => false,
+                    'dotacion' => null
+                ]);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'existe' => false,
+                'error' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * Generar próximo número de vale correlativo
+     * Formato: VALE-001, VALE-002, ... VALE-9999
+     */
+    public function proximoNumerovale($id)
+    {
+        try {
+            $papeleta = Papeleta::findOrFail($id);
+            
+            // Obtener el máximo número de vale existente para esta papeleta
+            $ultimaDotacion = DotacionCombustible::where('papeleta_id', $id)
+                ->orderBy('numero_vale', 'desc')
+                ->first();
+            
+            $proximoNumero = 1;
+            
+            if ($ultimaDotacion && $ultimaDotacion->numero_vale) {
+                // Extraer el número del formato VALE-XXX
+                preg_match('/VALE-(\d+)/', $ultimaDotacion->numero_vale, $matches);
+                if (isset($matches[1])) {
+                    $proximoNumero = intval($matches[1]) + 1;
+                }
+            }
+            
+            // Formatear con ceros a la izquierda (VALE-001, VALE-002, etc.)
+            $numeroVale = 'VALE-' . str_pad($proximoNumero, 4, '0', STR_PAD_LEFT);
+            
+            return response()->json([
+                'exito' => true,
+                'numero_vale' => $numeroVale,
+                'numero_secuencial' => $proximoNumero
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'exito' => false,
+                'error' => $e->getMessage()
+            ], 400);
+        }
     }
 
 }

@@ -13,7 +13,7 @@ class CreateFotosFichaActividadTable extends Migration
      */
     public function up()
     {
-        Schema::create('foto_ficha_actividads', function (Blueprint $table) {
+        Schema::create('foto_ficha_actividades', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('ficha_actividad_id');
             $table->text('url');
@@ -37,6 +37,6 @@ class CreateFotosFichaActividadTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('foto_ficha_actividads');
+        Schema::dropIfExists('foto_ficha_actividades');
     }
 }

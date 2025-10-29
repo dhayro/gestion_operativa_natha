@@ -421,7 +421,7 @@
     <script>
     // Carga dinámica de tipos de combustible
     function loadTiposCombustible(selectedId = null) {
-        return $.get('/api/select/tipo-combustibles')
+        return $.get('/tipo_combustibles/api/select')
             .done(function(data) {
                 var select = $('#tipo_combustible_id');
                 select.empty().append('<option value="">Seleccione</option>');
@@ -443,7 +443,7 @@
 
     // Carga dinámica de proveedores para SOAT
     function loadProveedoresVehiculo(selectedId = null) {
-        return $.get('/api/select/proveedores')
+        return $.get('/proveedores/api/select')
             .done(function(data) {
                 var select = $('#proveedor_vehiculo_id');
                 select.empty().append('<option value="">Seleccione</option>');

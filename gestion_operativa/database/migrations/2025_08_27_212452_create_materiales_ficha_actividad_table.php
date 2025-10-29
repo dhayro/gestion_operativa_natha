@@ -13,7 +13,7 @@ class CreateMaterialesFichaActividadTable extends Migration
      */
     public function up()
     {
-        Schema::create('material_ficha_actividads', function (Blueprint $table) {
+        Schema::create('material_ficha_actividades', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('ficha_actividad_id');
             $table->unsignedBigInteger('material_id');
@@ -38,6 +38,6 @@ class CreateMaterialesFichaActividadTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('material_ficha_actividads');
+        Schema::dropIfExists('material_ficha_actividades');
     }
 }

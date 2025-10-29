@@ -8,4 +8,17 @@ use Illuminate\Database\Eloquent\Model;
 class Situacion extends Model
 {
     use HasFactory;
+
+    protected $table = 'situacions';
+
+    protected $fillable = [
+        'nombre',
+        'estado'
+    ];
+
+    protected $casts = [
+        'estado' => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
 }

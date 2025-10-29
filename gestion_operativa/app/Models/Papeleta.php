@@ -132,6 +132,18 @@ class Papeleta extends Model
         return $this->belongsTo(Empleado::class, 'chofer_id');
     }
 
+    // Relación con dotaciones de combustible
+    public function dotacionesCombustible()
+    {
+        return $this->hasMany(DotacionCombustible::class, 'papeleta_id');
+    }
+
+    // Alias para dotaciones
+    public function dotaciones()
+    {
+        return $this->dotacionesCombustible();
+    }
+
     // Método para obtener los miembros de cuadrilla seleccionados
     public function miembrosCuadrillaEmpleados()
     {
@@ -157,9 +169,16 @@ class Papeleta extends Model
     // Scope para filtrar por usuario a través de empleado y cuadrilla
     public function scopeParaUsuario($query, $userId)
     {
-        return $query->whereHas('asignacionVehiculo.cuadrilla.cuadrillaEmpleados', function ($q) use ($userId) {
-            $q->whereHas('empleado.usuario', function ($emp) use ($userId) {
-                $emp->where('id', $userId);
+        // Obtener el usuario y su email
+        $user = \App\Models\User::find($userId);
+        if (!$user) {
+            return $query->whereRaw('1 = 0'); // Retornar sin resultados si no existe usuario
+        }
+        
+        // Filtrar por empleado que coincida con el email del usuario
+        return $query->whereHas('asignacionVehiculo.cuadrilla.cuadrillaEmpleados', function ($q) use ($user) {
+            $q->whereHas('empleado', function ($emp) use ($user) {
+                $emp->where('email', $user->email);
             })->where('estado', true);
         });
     }
@@ -203,5 +222,32 @@ class Papeleta extends Model
         if ($value && !$this->estado) {
             $this->attributes['fecha_anulacion'] = $value;
         }
+    }
+
+    // Mutator para asegurar que miembros_cuadrilla se guarde como JSON
+    public function setMiembrosCuadrillaAttribute($value)
+    {
+        if (is_array($value)) {
+            $this->attributes['miembros_cuadrilla'] = json_encode($value);
+        } elseif (is_null($value)) {
+            $this->attributes['miembros_cuadrilla'] = null;
+        } else {
+            $this->attributes['miembros_cuadrilla'] = $value;
+        }
+    }
+
+    // Accessor para asegurar que miembros_cuadrilla siempre se devuelva como array
+    public function getMiembrosCuadrillaAttribute($value)
+    {
+        if (is_null($value)) {
+            return [];
+        }
+        
+        if (is_array($value)) {
+            return array_filter(array_map('intval', $value));
+        }
+        
+        $decoded = json_decode($value, true);
+        return is_array($decoded) ? array_filter(array_map('intval', $decoded)) : [];
     }
 }
