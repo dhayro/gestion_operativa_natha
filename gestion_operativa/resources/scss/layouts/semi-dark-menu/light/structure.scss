@@ -229,7 +229,7 @@ code {
   margin-left: 80px;
 }
 
-/* 
+/*
 =====================
     Navigation Bar
 =====================
@@ -866,7 +866,7 @@ body {
   }
 }
 
-/* 
+/*
 ===============
     Sidebar
 ===============
@@ -925,7 +925,7 @@ body {
           display: inline-block;
         }
       }
-      
+
     }
 
     span {
@@ -933,7 +933,7 @@ body {
         display: none;
       }
     }
-    
+
   }
 
   #content {
@@ -1221,7 +1221,7 @@ body {
             }
           }
         }
-        
+
       }
     }
 
@@ -1257,7 +1257,7 @@ body {
           fill: #008eff0a;
         }
       }
-      
+
     }
 
     > {
@@ -1287,7 +1287,7 @@ body {
 
           &:hover {
             color: #fff;
-  
+
             svg {
               color: #fff!important;
               fill: #008eff0a;
@@ -1355,14 +1355,14 @@ body {
         border-top-left-radius: 10px;
         border-bottom-left-radius: 10px;
         font-weight: 500;
-        
+
         &:before {
           background-color: $white;
         }
 
         &:hover {
           color: #fff!important;
-    
+
           &:before {
             background: #fff !important;
             box-shadow: 0 0 0px 2px rgb(255 255 255 / 43%);
@@ -1378,7 +1378,7 @@ body {
     > li {
 
       margin-top: 3px;
-      
+
       &.active {
         position: relative;
 
@@ -1396,7 +1396,7 @@ body {
           left: -5px;
           top: 1px;
         }
-        
+
       }
 
       a {
@@ -1526,7 +1526,7 @@ body {
   animation-name: e-fadeInUp;
 }
 
-/*  
+/*
     ======================
         Footer-wrapper
     ======================
@@ -1588,7 +1588,7 @@ body {
   }
 }
 
-/*  
+/*
     ======================
         MEDIA QUERIES
     ======================
@@ -1697,7 +1697,7 @@ body {
     z-index: 9999;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
-    -webkit-transform: translate3d(0, 0, 0);
+    // -webkit-transform: translate3d(0, 0, 0);
     border-radius: 0;
     left: 0;
   }
@@ -1710,7 +1710,7 @@ body {
     height: 100vh !important;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
-    -webkit-transform: translate3d(0, 0, 0);
+    // -webkit-transform: translate3d(0, 0, 0);
   }
 
   /* display .overlay when it has the .active class */

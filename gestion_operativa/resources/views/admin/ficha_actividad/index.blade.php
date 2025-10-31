@@ -225,13 +225,13 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="latitud" class="form-label">📍 Latitud</label>
-                            <input type="text" class="form-control" id="latitud" name="latitud" maxlength="50" placeholder="Ej: -8.3789" >
-                            <small class="form-text text-muted">Haz clic en el mapa o ingresa manualmente</small>
+                            <input type="text" class="form-control" id="latitud" name="latitud" maxlength="50" placeholder="Ej: -8.3789" readonly>
+                            <small class="form-text text-muted">Haz clic en el mapa para establecer</small>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="longitud" class="form-label">📍 Longitud</label>
-                            <input type="text" class="form-control" id="longitud" name="longitud" maxlength="50" placeholder="Ej: -74.5234" >
-                            <small class="form-text text-muted">Haz clic en el mapa o ingresa manualmente</small>
+                            <input type="text" class="form-control" id="longitud" name="longitud" maxlength="50" placeholder="Ej: -74.5234" readonly>
+                            <small class="form-text text-muted">Haz clic en el mapa para establecer</small>
                         </div>
                     </div>
 
@@ -431,6 +431,8 @@
         $('.select2').val('').trigger('change');
         $('#fichaModalLabel').text('Crear Ficha de Actividad');
         $('#estado').prop('checked', true);
+        $('#latitud').val('');
+        $('#longitud').val('');
     }
 
     function guardarFicha() {
@@ -657,7 +659,7 @@
             // Info window
             const infoWindow = new google.maps.InfoWindow({
                 content: `<div style="text-align: center; font-weight: bold;">
-                    <span style="background: #28a745; color: white; padding: 5px 10px; border-radius: 4px;">✓ UBICACIÓN CAPTURADA</span><br>
+                 <strong>Ubicación</strong><br>
                     Lat: ${lat.toFixed(6)}<br>
                     Lng: ${lng.toFixed(6)}
                 </div>`

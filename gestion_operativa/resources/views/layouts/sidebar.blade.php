@@ -139,6 +139,9 @@
                     <li class="{{ Request::routeIs('neas.index') ? 'active' : '' }}">
                         <a href="{{ route('neas.index') }}">NEAs</a>
                     </li>
+                    <li class="{{ Request::routeIs('pecosas.index') ? 'active' : '' }}">
+                        <a href="{{ route('pecosas.index') }}">PECOSAs</a>
+                    </li>
                 </ul>
             </li>
 
@@ -194,6 +197,24 @@
                     </li>
                     <li class="{{ Request::routeIs('fichas_actividad.index') ? 'active' : '' }}">
                         <a href="{{ route('fichas_actividad.index') }}">Fichas de Actividad</a>
+                    </li>
+                </ul>
+            </li>
+
+            <!-- CONSULTAS E INFORMES -->
+            <li class="menu {{ ($catName === 'consultas') ? 'active' : '' }}">
+                <a href="#consultas" data-bs-toggle="collapse" aria-expanded="{{ ($catName === 'consultas') ? 'true' : 'false' }}" class="dropdown-toggle">
+                    <div class="">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-bar-chart-2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                        <span>Consultas e Informes</span>
+                    </div>
+                    <div>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </div>
+                </a>
+                <ul class="collapse submenu list-unstyled {{ ($catName === 'consultas') ? 'show' : '' }}" id="consultas" data-bs-parent="#accordionExample">
+                    <li class="{{ Request::routeIs('consulta_nea.index') ? 'active' : '' }}">
+                        <a href="{{ route('consulta_nea.index') }}"><i class="fas fa-search"></i> NEAs y Movimientos</a>
                     </li>
                 </ul>
             </li>
