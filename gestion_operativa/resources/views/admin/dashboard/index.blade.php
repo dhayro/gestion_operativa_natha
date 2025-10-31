@@ -210,7 +210,7 @@
                                     {{ substr($empleado->nombre, 0, 1) }}
                                 </div>
                                 <div>
-                                    <small class="d-block">{{ $empleado->nombre }}</small>
+                                    <small class="d-block">{{ $empleado->nombre }} {{ $empleado->apellido ?? '' }}</small>
                                     <small class="text-muted">{{ $empleado->cargo->nombre ?? 'N/A' }}</small>
                                 </div>
                             </div>

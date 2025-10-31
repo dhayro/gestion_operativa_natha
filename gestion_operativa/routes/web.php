@@ -30,8 +30,10 @@ use App\Http\Controllers\SituacionController;
 use App\Http\Controllers\ServicioElectricoController;
 use App\Http\Controllers\TipoComprobanteController;
 use App\Http\Controllers\NeaController;
+use App\Http\Controllers\PecosaController;
 use App\Http\Controllers\FichaActividadController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ConsultaNeaController;
 
 Route::get('/test-email', function () {
     try {
@@ -224,11 +226,43 @@ Route::prefix('tipo-comprobantes')->group(function () {
 Route::prefix('neas')->group(function () {
     Route::get('/data', [NeaController::class, 'getData'])->name('neas.data');
     Route::get('/select', [NeaController::class, 'select'])->name('neas.select');
+    Route::get('/proximo-numero', [NeaController::class, 'proximoNumeroNea'])->name('neas.proximoNumero');
+    Route::get('/materiales/obtener', [NeaController::class, 'getMateriales'])->name('neas.getMateriales');
+    Route::get('/material/{materialId}', [NeaController::class, 'getDetallesMaterial'])->name('neas.getDetallesMaterial');
     Route::get('/', [NeaController::class, 'index'])->name('neas.index');
     Route::post('/', [NeaController::class, 'store'])->name('neas.store');
     Route::get('/{nea}', [NeaController::class, 'show'])->name('neas.show');
     Route::put('/{nea}', [NeaController::class, 'update'])->name('neas.update');
+    Route::post('/{nea}/anular', [NeaController::class, 'anular'])->name('neas.anular');
+    Route::get('/{nea}/imprimir', [NeaController::class, 'imprimirPDF'])->name('neas.imprimir');
+    Route::get('/{nea}/preview', [NeaController::class, 'previsualizarPDF'])->name('neas.preview');
     Route::delete('/{nea}', [NeaController::class, 'destroy'])->name('neas.destroy');
+});
+
+// Rutas CRUD para PECOSAs
+Route::prefix('pecosas')->group(function () {
+    Route::get('/data', [PecosaController::class, 'getData'])->name('pecosas.data');
+    Route::get('/proximo-numero', [PecosaController::class, 'proximoNumeroPecosa'])->name('pecosas.proximoNumero');
+    Route::get('/empleados/{cuadrillaId}', [PecosaController::class, 'getEmpleadosCuadrilla'])->name('pecosas.getEmpleados');
+    Route::get('/nea-detalles/{cuadrillaEmpleadoId}', [PecosaController::class, 'getNeaDetallesDisponibles'])->name('pecosas.getNeaDetalles');
+    Route::get('/', [PecosaController::class, 'index'])->name('pecosas.index');
+    Route::post('/', [PecosaController::class, 'store'])->name('pecosas.store');
+    Route::get('/{pecosa}/preview', [PecosaController::class, 'previsualizarPecosaPdf'])->name('pecosas.preview');
+    Route::get('/{pecosa}/imprimir', [PecosaController::class, 'imprimirPecosaPdf'])->name('pecosas.imprimir');
+    Route::get('/{pecosa}/edit', [PecosaController::class, 'edit'])->name('pecosas.edit');
+    Route::get('/{pecosa}', [PecosaController::class, 'show'])->name('pecosas.show');
+    Route::put('/{pecosa}', [PecosaController::class, 'update'])->name('pecosas.update');
+    Route::post('/{pecosa}/anular', [PecosaController::class, 'anular'])->name('pecosas.anular');
+    Route::delete('/{pecosa}', [PecosaController::class, 'destroy'])->name('pecosas.destroy');
+});
+
+// Rutas para Consulta de NEAs y Movimientos
+Route::prefix('consulta-nea')->name('consulta_nea.')->group(function () {
+    Route::get('/', [ConsultaNeaController::class, 'index'])->name('index');
+    Route::get('/{id}/obtener', [ConsultaNeaController::class, 'obtenerNea'])->name('obtener');
+    Route::get('/{neaId}/movimientos', [ConsultaNeaController::class, 'getMovimientos'])->name('movimientos');
+    Route::get('/{neaId}/resumen-stock', [ConsultaNeaController::class, 'getResumenStock'])->name('resumen_stock');
+    Route::get('/{neaId}/exportar', [ConsultaNeaController::class, 'exportarReporte'])->name('exportar');
 });
 
 // Rutas CRUD para Tipos de Actividad

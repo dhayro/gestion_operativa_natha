@@ -124,11 +124,19 @@ class FichaActividad extends Model
     }
 
     /**
-     * Relación con Empleados
+     * Relación con Empleados (a través de ficha_actividad_empleados y cuadrillas_empleados)
      */
     public function empleados()
     {
-        return $this->belongsToMany(Empleado::class, 'ficha_actividad_empleados', 'ficha_actividad_id', 'empleado_id');
+        return $this->hasManyThrough(
+            Empleado::class,
+            FichaActividadEmpleado::class,
+            'ficha_actividad_id',  // Foreign key on ficha_actividad_empleados
+            'id',  // Foreign key on empleados
+            'id',  // Local key on ficha_actividads
+            'cuadrilla_empleado_id'  // Local key on ficha_actividad_empleados
+        )->join('cuadrillas_empleados', 'ficha_actividad_empleados.cuadrilla_empleado_id', '=', 'cuadrillas_empleados.id')
+         ->select('empleados.*');
     }
 
     /**
