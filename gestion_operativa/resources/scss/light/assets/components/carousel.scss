@@ -1,4 +1,4 @@
-@import '../../base/base';
+@use '../../base/base' as *;
 .carousel-caption {
   h3, h5 {
     color: #fff;

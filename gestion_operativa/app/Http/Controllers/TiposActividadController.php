@@ -102,7 +102,10 @@ class TiposActividadController extends Controller
     public function show($id)
     {
         $tiposActividad = TiposActividad::findOrFail($id);
-        return response()->json($tiposActividad);
+        return response()->json([
+            'success' => true,
+            'data' => $tiposActividad
+        ]);
     }
 
     public function update(Request $request, $id)
@@ -255,5 +258,39 @@ class TiposActividadController extends Controller
                 return $this->buildTreeNode($hijo);
             })->toArray()
         ];
+    }
+
+    public function selectConHijos()
+    {
+        $tipos = TiposActividad::whereNull('dependencia_id')
+            ->where('estado', true)
+            ->orderBy('nombre')
+            ->get()
+            ->map(function ($tipo) {
+                return $this->construirArbolRecursivo($tipo);
+            });
+
+        return response()->json($tipos);
+    }
+
+    private function construirArbolRecursivo($tipo)
+    {
+        $hijos = TiposActividad::where('dependencia_id', $tipo->id)
+            ->where('estado', true)
+            ->orderBy('nombre')
+            ->get();
+
+        $data = [
+            'id' => $tipo->id,
+            'text' => $tipo->nombre,
+        ];
+
+        if ($hijos->count() > 0) {
+            $data['children'] = $hijos->map(function ($hijo) {
+                return $this->construirArbolRecursivo($hijo);
+            })->toArray();
+        }
+
+        return $data;
     }
 }

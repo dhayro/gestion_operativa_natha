@@ -1,4 +1,4 @@
-@import '../../base/base';
+@use '../../base/base' as *;
 body.dark {
 
 .actions-btn-tooltip {

@@ -1,4 +1,4 @@
-@import '../../base/base';
+@use '../../base/base' as *;
 body.dark {
   .swal2-popup {
     background-color: #0e1726 !important;

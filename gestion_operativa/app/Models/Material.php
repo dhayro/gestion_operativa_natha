@@ -29,4 +29,9 @@ class Material extends Model
     {
         return $this->belongsTo(UnidadMedida::class);
     }
+
+    public function neaDetalles()
+    {
+        return $this->hasMany(NeaDetalle::class, 'material_id');
+    }
 }

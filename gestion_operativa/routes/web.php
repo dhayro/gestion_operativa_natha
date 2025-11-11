@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
@@ -31,7 +32,9 @@ use App\Http\Controllers\ServicioElectricoController;
 use App\Http\Controllers\TipoComprobanteController;
 use App\Http\Controllers\NeaController;
 use App\Http\Controllers\PecosaController;
+use App\Http\Controllers\Admin\PecosaController as AdminPecosaController;
 use App\Http\Controllers\FichaActividadController;
+use App\Http\Controllers\FichaActividadDetalleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ConsultaNeaController;
 
@@ -72,10 +75,51 @@ Route::middleware(['auth'])->group(function () {
  */
 Route::get('/', [DashboardController::class, 'index'])->name('dashboard.index');
 
+// Ruta para obtener info del usuario autenticado
+Route::get('/api/user/me', function () {
+    try {
+        $user = Auth::user();
+        if (!$user || !$user->empleado) {
+            return response()->json(['error' => 'Usuario no tiene empleado asignado'], 404);
+        }
+        
+        $empleado = $user->empleado;
+        
+        // Obtener la cuadrilla activa del empleado (la más reciente)
+        $cuadrillaEmpleado = $empleado->cuadrillaEmpleados()
+                                ->where('estado', true)
+                                ->orderBy('created_at', 'desc')
+                                ->first();
+        
+        if (!$cuadrillaEmpleado) {
+            return response()->json(['error' => 'Empleado no tiene cuadrilla asignada'], 404);
+        }
+        
+        $cuadrilla = $cuadrillaEmpleado->cuadrilla;
+        
+        return response()->json([
+            'id' => $user->id,
+            'email' => $user->email,
+            'empleado_id' => $user->empleado_id,
+            'empleado' => $empleado,
+            'cuadrilla_id' => $cuadrilla->id,
+            'cuadrilla' => $cuadrilla
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Error en /api/user/me:', [
+            'mensaje' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine()
+        ]);
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+});
+
 
 // Materiales CRUD (rutas agrupadas igual que empleados)
 Route::prefix('materiales')->group(function () {
     Route::get('/data', [MaterialController::class, 'getData'])->name('materiales.data');
+    Route::get('/select', [MaterialController::class, 'select'])->name('materiales.select');
     Route::get('/', [MaterialController::class, 'index'])->name('materiales.index');
     Route::post('/', [MaterialController::class, 'store'])->name('materiales.store');
     Route::get('/{material}', [MaterialController::class, 'show'])->name('materiales.show');
@@ -241,10 +285,23 @@ Route::prefix('neas')->group(function () {
 
 // Rutas CRUD para PECOSAs
 Route::prefix('pecosas')->group(function () {
+    // Rutas más específicas PRIMERO
     Route::get('/data', [PecosaController::class, 'getData'])->name('pecosas.data');
     Route::get('/proximo-numero', [PecosaController::class, 'proximoNumeroPecosa'])->name('pecosas.proximoNumero');
     Route::get('/empleados/{cuadrillaId}', [PecosaController::class, 'getEmpleadosCuadrilla'])->name('pecosas.getEmpleados');
     Route::get('/nea-detalles/{cuadrillaEmpleadoId}', [PecosaController::class, 'getNeaDetallesDisponibles'])->name('pecosas.getNeaDetalles');
+    Route::get('/todas', [AdminPecosaController::class, 'getPecosasDisponibles'])->name('pecosas.todas');
+    
+    // Rutas para gestión de materiales de pecosa (desde Admin\PecosaController)
+    Route::get('/cuadrilla/{cuadrillaEmpleadoId}/pecosas', [AdminPecosaController::class, 'getPecosasPorCuadrilla'])->name('pecosas.porCuadrilla')->whereNumber('cuadrillaEmpleadoId');
+    Route::get('/{pecosaId}/materiales', [AdminPecosaController::class, 'getMaterialesPecosa'])->name('pecosas.materiales.get')->whereNumber('pecosaId');
+    Route::get('/{pecosaId}/material/{materialId}/saldo', [AdminPecosaController::class, 'getSaldoMaterial'])->name('pecosas.material.saldo')->whereNumber('pecosaId')->whereNumber('materialId');
+    Route::post('/registrar-salida', [AdminPecosaController::class, 'registrarSalida'])->name('pecosas.registrar.salida');
+    Route::post('/registrar-entrada', [AdminPecosaController::class, 'registrarEntrada'])->name('pecosas.registrar.entrada');
+    Route::get('/{pecosaId}/historial', [AdminPecosaController::class, 'getHistorial'])->name('pecosas.historial')->whereNumber('pecosaId');
+    Route::get('/{pecosaId}/ver-historial', [AdminPecosaController::class, 'verHistorial'])->name('pecosas.ver.historial')->whereNumber('pecosaId');
+    Route::get('/ficha/{fichaId}/movimientos', [AdminPecosaController::class, 'getMovimientosFicha'])->name('pecosas.ficha.movimientos')->whereNumber('fichaId');
+    
     Route::get('/', [PecosaController::class, 'index'])->name('pecosas.index');
     Route::post('/', [PecosaController::class, 'store'])->name('pecosas.store');
     Route::get('/{pecosa}/preview', [PecosaController::class, 'previsualizarPecosaPdf'])->name('pecosas.preview');
@@ -267,9 +324,13 @@ Route::prefix('consulta-nea')->name('consulta_nea.')->group(function () {
 
 // Rutas CRUD para Tipos de Actividad
 Route::prefix('tipos-actividad')->group(function () {
+    // Rutas específicas PRIMERO (antes de /{tiposActividad})
     Route::get('/data', [TiposActividadController::class, 'getData'])->name('tipos-actividad.data');
     Route::get('/select', [TiposActividadController::class, 'select'])->name('tipos-actividad.select');
+    Route::get('/con-hijos/select', [TiposActividadController::class, 'selectConHijos'])->name('tipos-actividad.con-hijos');
     Route::get('/padres/select', [TiposActividadController::class, 'getPadresForSelect'])->name('tipos-actividad.padres-select');
+    
+    // Rutas genéricas DESPUÉS
     Route::get('/', [TiposActividadController::class, 'index'])->name('tipos-actividad.index');
     Route::post('/', [TiposActividadController::class, 'store'])->name('tipos-actividad.store');
     Route::get('/{tiposActividad}', [TiposActividadController::class, 'show'])->name('tipos-actividad.show');
@@ -322,6 +383,7 @@ Route::prefix('ubigeo')->group(function () {
 Route::prefix('medidor')->group(function () {
     Route::get('/data', [MedidorController::class, 'getData'])->name('medidor.data');
     Route::get('/api/materiales', [MedidorController::class, 'getMateriales'])->name('medidor.materiales');
+    Route::get('/select', [MedidorController::class, 'select'])->name('medidor.select');
     Route::get('/', [MedidorController::class, 'index'])->name('medidor.index');
     Route::post('/', [MedidorController::class, 'store'])->name('medidor.store');
     Route::get('/{medidor}', [MedidorController::class, 'show'])->name('medidor.show');
@@ -338,6 +400,7 @@ Route::prefix('suministro')->group(function () {
     Route::get('/distritos/{provincia_id}', [SuministroController::class, 'getDistritos'])->name('suministro.distritos');
     Route::get('/ubigeo-jerarquia/{ubigeo_id}', [SuministroController::class, 'getUbigeoHierarquia'])->name('suministro.ubigeo.jerarquia');
     Route::get('/medidores', [SuministroController::class, 'getMedidores'])->name('suministro.medidores');
+    Route::get('/{suministro}/medidores-historial', [SuministroController::class, 'getMedidoresHistorial'])->name('suministro.medidores.historial');
     Route::get('/', [SuministroController::class, 'index'])->name('suministro.index');
     Route::post('/', [SuministroController::class, 'store'])->name('suministro.store');
     Route::get('/{suministro}', [SuministroController::class, 'show'])->name('suministro.show');
@@ -347,17 +410,50 @@ Route::prefix('suministro')->group(function () {
 
 // Rutas para Fichas de Actividad
 Route::prefix('fichas-actividad')->name('fichas_actividad.')->group(function () {
+    // Rutas explícitas PRIMERO (antes de /{id})
     Route::get('/data', [FichaActividadController::class, 'getData'])->name('getData');
-    Route::get('/', [FichaActividadController::class, 'index'])->name('index');
     Route::get('/create', [FichaActividadController::class, 'create'])->name('create');
-    Route::post('/', [FichaActividadController::class, 'store'])->name('store');
-    Route::get('/{id}', [FichaActividadController::class, 'show'])->name('show');
-    Route::get('/{id}/edit', [FichaActividadController::class, 'edit'])->name('edit');
-    Route::put('/{id}', [FichaActividadController::class, 'update'])->name('update');
-    Route::delete('/{id}', [FichaActividadController::class, 'destroy'])->name('destroy');
-    Route::post('/{id}/estado', [FichaActividadController::class, 'cambiarEstado'])->name('cambiarEstado');
     Route::get('/api/buscar', [FichaActividadController::class, 'buscar'])->name('buscar');
     Route::get('/api/suministro/{suministroId}', [FichaActividadController::class, 'porSuministro'])->name('porSuministro');
+
+    // Rutas de detalles (empleados, medidores, etc.) ANTES de /{id}
+    // Medidores
+    Route::post('/{fichaId}/detalles/medidores', [FichaActividadDetalleController::class, 'medidoresStore'])->name('detalles.medidores.store')->whereNumber('fichaId');
+    Route::put('/{fichaId}/detalles/medidores/{medidorId}', [FichaActividadDetalleController::class, 'medidoresUpdate'])->name('detalles.medidores.update')->whereNumber('fichaId')->whereNumber('medidorId');
+    Route::delete('/{fichaId}/detalles/medidores/{medidorId}', [FichaActividadDetalleController::class, 'medidoresDestroy'])->name('detalles.medidores.destroy')->whereNumber('fichaId')->whereNumber('medidorId');
+    Route::get('/{fichaId}/detalles/medidores', [FichaActividadDetalleController::class, 'getMedidores'])->name('detalles.medidores.get')->whereNumber('fichaId');
+
+    // Materiales
+    Route::post('/{fichaId}/detalles/materiales', [FichaActividadDetalleController::class, 'materialesStore'])->name('detalles.materiales.store')->whereNumber('fichaId');
+    Route::put('/{fichaId}/detalles/materiales/{materialId}', [FichaActividadDetalleController::class, 'materialesUpdate'])->name('detalles.materiales.update')->whereNumber('fichaId')->whereNumber('materialId');
+    Route::delete('/{fichaId}/detalles/materiales/{materialId}', [FichaActividadDetalleController::class, 'materialesDestroy'])->name('detalles.materiales.destroy')->whereNumber('fichaId')->whereNumber('materialId');
+    Route::get('/{fichaId}/detalles/materiales', [FichaActividadDetalleController::class, 'getMateriales'])->name('detalles.materiales.get')->whereNumber('fichaId');
+
+    // Fotos
+    Route::post('/{fichaId}/detalles/fotos', [FichaActividadDetalleController::class, 'fotosStore'])->name('detalles.fotos.store')->whereNumber('fichaId');
+    Route::put('/{fichaId}/detalles/fotos/{fotoId}', [FichaActividadDetalleController::class, 'fotosUpdate'])->name('detalles.fotos.update')->whereNumber('fichaId')->whereNumber('fotoId');
+    Route::delete('/{fichaId}/detalles/fotos/{fotoId}', [FichaActividadDetalleController::class, 'fotosDestroy'])->name('detalles.fotos.destroy')->whereNumber('fichaId')->whereNumber('fotoId');
+    Route::get('/{fichaId}/detalles/fotos', [FichaActividadDetalleController::class, 'getFotos'])->name('detalles.fotos.get')->whereNumber('fichaId');
+
+    // Precintos
+    Route::post('/{fichaId}/detalles/precintos', [FichaActividadDetalleController::class, 'precintosStore'])->name('detalles.precintos.store')->whereNumber('fichaId');
+    Route::put('/{fichaId}/detalles/precintos/{precintoId}', [FichaActividadDetalleController::class, 'precintosUpdate'])->name('detalles.precintos.update')->whereNumber('fichaId')->whereNumber('precintoId');
+    Route::delete('/{fichaId}/detalles/precintos/{precintoId}', [FichaActividadDetalleController::class, 'precintosDestroy'])->name('detalles.precintos.destroy')->whereNumber('fichaId')->whereNumber('precintoId');
+    Route::get('/{fichaId}/detalles/precintos', [FichaActividadDetalleController::class, 'getPrecintos'])->name('detalles.precintos.get')->whereNumber('fichaId');
+
+    // Empleados
+    Route::post('/{fichaId}/detalles/empleados', [FichaActividadDetalleController::class, 'empleadosStore'])->name('detalles.empleados.store')->whereNumber('fichaId');
+    Route::delete('/{fichaId}/detalles/empleados/{empleadoId}', [FichaActividadDetalleController::class, 'empleadosDestroy'])->name('detalles.empleados.destroy')->whereNumber('fichaId')->whereNumber('empleadoId');
+    Route::get('/{fichaId}/detalles/empleados', [FichaActividadDetalleController::class, 'getEmpleados'])->name('detalles.empleados.get')->whereNumber('fichaId');
+
+    // Rutas genéricas DESPUÉS (con /{id})
+    Route::get('/', [FichaActividadController::class, 'index'])->name('index');
+    Route::post('/', [FichaActividadController::class, 'store'])->name('store');
+    Route::get('/{id}', [FichaActividadController::class, 'show'])->name('show')->whereNumber('id');
+    Route::get('/{id}/edit', [FichaActividadController::class, 'edit'])->name('edit')->whereNumber('id');
+    Route::put('/{id}', [FichaActividadController::class, 'update'])->name('update')->whereNumber('id');
+    Route::delete('/{id}', [FichaActividadController::class, 'destroy'])->name('destroy')->whereNumber('id');
+    Route::post('/{id}/estado', [FichaActividadController::class, 'cambiarEstado'])->name('cambiarEstado')->whereNumber('id');
 });
 
 // Rutas para Proveedores
@@ -373,22 +469,26 @@ Route::prefix('proveedores')->group(function () {
 
 // Rutas para Cuadrillas
 Route::prefix('cuadrillas')->group(function () {
+    // Rutas específicas PRIMERO (antes de /{cuadrilla})
     Route::get('/data', [CuadrillaController::class, 'getData'])->name('cuadrillas.data');
     Route::get('/api/select', [CuadrillaController::class, 'select'])->name('cuadrillas.select');
+    Route::get('/select', [CuadrillaEmpleadoController::class, 'select'])->name('cuadrilla-empleados.select');
+    
+    // Rutas genéricas DESPUÉS
     Route::get('/', [CuadrillaController::class, 'index'])->name('cuadrillas.index');
     Route::post('/', [CuadrillaController::class, 'store'])->name('cuadrillas.store');
     Route::get('/{cuadrilla}', [CuadrillaController::class, 'show'])->name('cuadrillas.show');
     Route::put('/{cuadrilla}', [CuadrillaController::class, 'update'])->name('cuadrillas.update');
     Route::delete('/{cuadrilla}', [CuadrillaController::class, 'destroy'])->name('cuadrillas.destroy');
     
-    // Rutas para gestión de empleados en cuadrillas
+    // Rutas para gestión de empleados en cuadrillas (paramétricos)
     Route::get('/{cuadrilla}/empleados/data', [CuadrillaEmpleadoController::class, 'getEmpleadosAsignados'])->name('cuadrillas.empleados.data');
     Route::get('/{cuadrilla}/empleados/disponibles', [CuadrillaEmpleadoController::class, 'getEmpleadosDisponibles'])->name('cuadrillas.empleados.disponibles');
     Route::post('/empleados/asignar', [CuadrillaEmpleadoController::class, 'asignarEmpleado'])->name('cuadrillas.empleados.asignar');
     Route::put('/empleados/{asignacion}/toggle', [CuadrillaEmpleadoController::class, 'toggleEstado'])->name('cuadrillas.empleados.toggle');
     Route::delete('/empleados/{asignacion}', [CuadrillaEmpleadoController::class, 'removeEmpleado'])->name('cuadrillas.empleados.remove');
     
-    // Rutas para gestión de vehículos en cuadrillas
+    // Rutas para gestión de vehículos en cuadrillas (paramétricos)
     Route::get('/{cuadrilla}/vehiculos/data', [AsignacionVehiculoController::class, 'getVehiculosAsignados'])->name('cuadrillas.vehiculos.data');
     Route::get('/{cuadrilla}/vehiculos/disponibles', [AsignacionVehiculoController::class, 'getVehiculosDisponibles'])->name('cuadrillas.vehiculos.disponibles');
     Route::get('/{cuadrilla}/empleados-chofer', [AsignacionVehiculoController::class, 'getEmpleadosChofer'])->name('cuadrillas.empleados.chofer');

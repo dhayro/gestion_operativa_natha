@@ -1,4 +1,4 @@
-@import '../../base/base';
+@use '../../base/base' as *;
 #demo_vertical::-ms-clear, #demo_vertical2::-ms-clear {
   display: none;
 }

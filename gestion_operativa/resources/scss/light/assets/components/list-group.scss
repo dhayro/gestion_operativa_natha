@@ -1,4 +1,4 @@
-@import '../../base/base';
+@use '../../base/base' as *;
 .list-group-item {
   border: 1px solid #e0e6ed;
   padding: 10px 12px;

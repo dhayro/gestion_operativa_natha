@@ -1,4 +1,4 @@
-@import '../../../light/base/base';
+@use '../../../light/base/base' as *;
 div#load_screen {
   background: rgb(236, 239, 255);
   opacity: 1;

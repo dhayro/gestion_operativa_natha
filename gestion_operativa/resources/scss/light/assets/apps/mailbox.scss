@@ -1,4 +1,4 @@
-@import '../../base/base';
+@use '../../base/base' as *;
 .layout-px-spacing {
   min-height: calc(100vh - 142px) !important;
 }

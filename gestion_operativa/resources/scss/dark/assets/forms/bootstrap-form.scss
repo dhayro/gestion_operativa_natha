@@ -1,4 +1,4 @@
-@import '../../base/base';
+@use '../../base/base' as *;
 body.dark {
 .row .col-lg-12 .widget .widget-header h4 {
   color: #000000;

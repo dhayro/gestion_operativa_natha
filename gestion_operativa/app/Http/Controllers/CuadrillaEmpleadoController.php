@@ -188,17 +188,35 @@ class CuadrillaEmpleadoController extends Controller
     {
         $search = $request->get('search', '');
         $page = $request->get('page', 1);
+        $fichaId = $request->get('ficha_id', null);
         $perPage = 10;
 
-        // IDs de empleados ya asignados a esta cuadrilla (activos e inactivos)
-        // Como ahora tenemos restricción única, no se permiten duplicados
-        $empleadosAsignados = CuadrillaEmpleado::where('cuadrilla_id', $cuadrillaId)
-            ->pluck('empleado_id')
-            ->toArray();
+        // Solo excluir empleados ya agregados a ESTA FICHA (no a la cuadrilla en general)
+        $empleadosEnFicha = [];
+        if ($fichaId) {
+            // Obtener los CuadrillaEmpleado IDs agregados a la ficha
+            $fichaEmpleados = \App\Models\FichaActividadEmpleado::where('ficha_actividad_id', $fichaId)
+                ->get()
+                ->pluck('cuadrilla_empleado_id')
+                ->toArray();
+            
+            // Ahora obtener los empleado_id de esos cuadrilla_empleado_id
+            if (!empty($fichaEmpleados)) {
+                $empleadosEnFicha = CuadrillaEmpleado::whereIn('id', $fichaEmpleados)
+                    ->pluck('empleado_id')
+                    ->toArray();
+            }
+        }
 
+        // Obtener empleados de esta cuadrilla específica
         $query = Empleado::with(['cargo', 'area'])
             ->where('estado', true) // Solo empleados activos
-            ->whereNotIn('id', $empleadosAsignados) // Excluir todos los ya asignados (activos e inactivos)
+            ->whereHas('cuadrillaEmpleados', function($q) use ($cuadrillaId) {
+                // Solo empleados que pertenecen a esta cuadrilla
+                $q->where('cuadrilla_id', $cuadrillaId)
+                  ->where('estado', 1);
+            })
+            ->whereNotIn('id', $empleadosEnFicha) // Excluir solo los ya en la ficha
             ->orderBy('nombre');
 
         if (!empty($search)) {
@@ -229,5 +247,22 @@ class CuadrillaEmpleadoController extends Controller
                 'more' => ($page * $perPage) < $total
             ]
         ]);
+    }
+
+    public function select()
+    {
+        $cuadrillaEmpleados = CuadrillaEmpleado::with(['cuadrilla', 'empleado'])
+            ->where('estado', 1)
+            ->orderBy('cuadrilla_id')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'cuadrilla_nombre' => $item->cuadrilla ? $item->cuadrilla->nombre : 'S/C',
+                    'empleado_nombre' => $item->empleado ? $item->empleado->nombre . ' ' . $item->empleado->apellido : 'N/A'
+                ];
+            });
+
+        return response()->json($cuadrillaEmpleados);
     }
 }

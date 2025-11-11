@@ -1,4 +1,4 @@
-@import '../../base/base';
+@use '../../base/base' as *;
 .blog-create-section {
   border-radius: 8px;
   border: 1px solid #e0e6ed;
