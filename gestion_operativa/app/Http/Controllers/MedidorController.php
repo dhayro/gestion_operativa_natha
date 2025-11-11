@@ -242,4 +242,65 @@ class MedidorController extends Controller
 
         return response()->json($materiales);
     }
+
+    public function select(Request $request)
+    {
+        $fichaId = $request->get('ficha_id', null);
+        $suministroId = $request->get('suministro_id', null);
+        
+        // Si viene un ficha_id, excluir medidores ya utilizados en esa ficha
+        $medidoresEnFicha = [];
+        if ($fichaId) {
+            $medidoresEnFicha = \App\Models\MedidorFichaActividad::where('ficha_actividad_id', $fichaId)
+                ->pluck('medidor_id')
+                ->toArray();
+        }
+
+        // Si viene un suministro_id, obtener su medidor actual
+        $medidorActualSuministro = null;
+        if ($suministroId) {
+            $suministro = \App\Models\Suministro::find($suministroId);
+            $medidorActualSuministro = $suministro ? $suministro->medidor_id : null;
+        }
+
+        $query = Medidor::select('id', 'serie', 'modelo')
+            ->where('estado', 1);
+
+        // Si hay medidores en la ficha, excluirlos (excepto el actual del suministro)
+        if (!empty($medidoresEnFicha)) {
+            $medidoresAExcluir = array_diff($medidoresEnFicha, $medidorActualSuministro ? [$medidorActualSuministro] : []);
+            if (!empty($medidoresAExcluir)) {
+                $query->whereNotIn('id', $medidoresAExcluir);
+            }
+        }
+
+        // Excluir medidores ya asignados a otros suministros (excepto el actual)
+        $medidoresAsignados = \App\Models\Suministro::where('medidor_id', '!=', null)
+            ->when($medidorActualSuministro, function ($q) use ($medidorActualSuministro) {
+                return $q->where('medidor_id', '!=', $medidorActualSuministro);
+            })
+            ->pluck('medidor_id')
+            ->toArray();
+
+        if (!empty($medidoresAsignados)) {
+            $query->whereNotIn('id', $medidoresAsignados);
+        }
+
+        // Incluir el medidor actual del suministro si existe
+        if ($medidorActualSuministro) {
+            $query->orWhere('id', $medidorActualSuministro);
+        }
+
+        $medidores = $query->orderBy('serie')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'serie' => $item->serie,
+                    'numero' => $item->serie . ' (' . $item->modelo . ')'
+                ];
+            });
+
+        return response()->json($medidores);
+    }
 }

@@ -1,4 +1,4 @@
-@import '../../base/base';
+@use '../../base/base' as *;
 .popovers-section h6 {
   color: $dark;
   font-size: 0.875rem;

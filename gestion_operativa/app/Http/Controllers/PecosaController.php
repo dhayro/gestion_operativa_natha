@@ -221,16 +221,26 @@ class PecosaController extends Controller
                     'usuario_creacion_id' => Auth::id()
                 ]);
 
-                // Crear movimiento de salida para el control de inventario
+                // Crear movimiento de entrada en tabla 'movimientos' (NEA -> PECOSA)
                 Movimiento::create([
                     'material_id' => $neaDetalle->material_id,
-                    'tipo_movimiento' => 'salida',
+                    'tipo_movimiento' => 'entrada',
                     'nea_detalle_id' => $detalle['nea_detalle_id'],
                     'pecosa_detalle_id' => $pecosaDetalle->id,
                     'cantidad' => $detalle['cantidad'],
                     'precio_unitario' => $neaDetalle->precio_unitario,
                     'incluye_igv' => $neaDetalle->incluye_igv,
                     'fecha' => $request->fecha,
+                    'estado' => true,
+                    'usuario_creacion_id' => Auth::id()
+                ]);
+
+                // TAMBIÉN crear entrada en material_pecosa_movimientos para controlar PECOSA -> FICHA
+                \App\Models\MaterialPecosaMovimiento::create([
+                    'pecosa_id' => $pecosa->id,
+                    'material_id' => $neaDetalle->material_id,
+                    'cantidad' => $detalle['cantidad'],
+                    'tipo_movimiento' => 'entrada',
                     'estado' => true,
                     'usuario_creacion_id' => Auth::id()
                 ]);

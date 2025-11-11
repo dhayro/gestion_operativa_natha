@@ -137,4 +137,14 @@ class MaterialController extends Controller
         $material->delete();
         return response()->json(['success' => true]);
     }
+
+    public function select()
+    {
+        $materiales = Material::select('id', 'nombre')
+            ->where('estado', 1)
+            ->orderBy('nombre')
+            ->get();
+
+        return response()->json($materiales);
+    }
 }

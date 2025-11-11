@@ -18,10 +18,6 @@ class Pecosa extends Model
         'nro_documento',
         'observaciones',
         'estado',
-        'anulada',
-        'motivo_anulacion',
-        'usuario_anulacion_id',
-        'fecha_anulacion',
         'usuario_creacion_id',
         'usuario_actualizacion_id'
     ];
@@ -29,8 +25,6 @@ class Pecosa extends Model
     protected $casts = [
         'fecha' => 'date',
         'estado' => 'boolean',
-        'anulada' => 'boolean',
-        'fecha_anulacion' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];
@@ -125,6 +119,14 @@ class Pecosa extends Model
             'id',
             'nea_detalle_id'
         );
+    }
+
+    /**
+     * Relación con movimientos de materiales (historial)
+     */
+    public function materialMovimientos()
+    {
+        return $this->hasMany(MaterialPecosaMovimiento::class, 'pecosa_id');
     }
 
     // ===== SCOPES =====

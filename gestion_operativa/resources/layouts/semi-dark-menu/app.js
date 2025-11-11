@@ -81,15 +81,32 @@ var App = function() {
             });
         },
         onToggleSidebarSubmenu: function() {
+            var sidebarWrapper = document.querySelector('.sidebar-wrapper');
+            if (!sidebarWrapper) return; // Exit if sidebar doesn't exist
+            
             ['mouseenter', 'mouseleave'].forEach(function(e){
-                document.querySelector('.sidebar-wrapper').addEventListener(e, function() {
+                sidebarWrapper.addEventListener(e, function() {
                     if (document.querySelector('body').classList.contains('alt-menu')) {
                         if (document.querySelector('.main-container').classList.contains('sidebar-closed')) {
                             if (e === 'mouseenter') {
-                                document.querySelector('li.menu .submenu').classList.remove('show');
-                                document.querySelector('li.menu.active .submenu').classList.add('recent-submenu');
-                                document.querySelector('li.menu.active').querySelector('.collapse.submenu.recent-submenu').classList.add('show');
-                                document.querySelector('.collapse.submenu.recent-submenu').parentNode.querySelector('.dropdown-toggle').setAttribute('aria-expanded', 'true');
+                                var liMenu = document.querySelector('li.menu .submenu');
+                                if (liMenu) liMenu.classList.remove('show');
+                                
+                                var activeSubmenu = document.querySelector('li.menu.active .submenu');
+                                if (activeSubmenu) {
+                                    activeSubmenu.classList.add('recent-submenu');
+                                    var activeMenuEl = document.querySelector('li.menu.active');
+                                    if (activeMenuEl) {
+                                        var collapseEl = activeMenuEl.querySelector('.collapse.submenu.recent-submenu');
+                                        if (collapseEl) {
+                                            collapseEl.classList.add('show');
+                                            var toggleEl = collapseEl.parentNode.querySelector('.dropdown-toggle');
+                                            if (toggleEl) {
+                                                toggleEl.setAttribute('aria-expanded', 'true');
+                                            }
+                                        }
+                                    }
+                                }
                             } else if (e === 'mouseleave') {
                                 let getMenuList = document.querySelectorAll('li.menu');
                                 getMenuList.forEach(element => {
@@ -112,12 +129,22 @@ var App = function() {
                     } else {
                         if (document.querySelector('.main-container').classList.contains('sidebar-closed')) {
                             if (e === 'mouseenter') {
-                                document.querySelector('li.menu .submenu').classList.remove('show');
+                                var liMenuEl = document.querySelector('li.menu .submenu');
+                                if (liMenuEl) liMenuEl.classList.remove('show');
 
                                 if (document.querySelector('li.menu.active .submenu')) {
                                     document.querySelector('li.menu.active .submenu').classList.add('recent-submenu');
-                                    document.querySelector('li.menu.active').querySelector('.collapse.submenu.recent-submenu').classList.add('show');
-                                    document.querySelector('.collapse.submenu.recent-submenu').parentNode.querySelector('.dropdown-toggle').setAttribute('aria-expanded', 'true');
+                                    var activeEl = document.querySelector('li.menu.active');
+                                    if (activeEl) {
+                                        var collapseElActive = activeEl.querySelector('.collapse.submenu.recent-submenu');
+                                        if (collapseElActive) {
+                                            collapseElActive.classList.add('show');
+                                            var toggleElActive = collapseElActive.parentNode.querySelector('.dropdown-toggle');
+                                            if (toggleElActive) {
+                                                toggleElActive.setAttribute('aria-expanded', 'true');
+                                            }
+                                        }
+                                    }
                                 }
                                 
                             } else if (e === 'mouseleave') {
@@ -150,14 +177,21 @@ var App = function() {
             // $('.sidebar-wrapper').off('mouseenter mouseleave');
         },
         overlay: function() {
-            document.querySelector('#dismiss, .overlay').addEventListener('click', function () {
-                // hide sidebar
-                Dom.class.mainContainer.classList.add('sidebar-closed');
-                Dom.class.mainContainer.classList.remove('sbar-open');
-                // hide overlay
-                Dom.class.overlay.classList.remove('show');
-                Dom.main.classList.remove('sidebar-noneoverflow');
-            });            
+            // Find overlay element - try both #dismiss and .overlay
+            var overlayElement = document.querySelector('#dismiss') || document.querySelector('.overlay');
+            
+            if (overlayElement) {
+                overlayElement.addEventListener('click', function () {
+                    // hide sidebar
+                    Dom.class.mainContainer.classList.add('sidebar-closed');
+                    Dom.class.mainContainer.classList.remove('sbar-open');
+                    // hide overlay
+                    if (Dom.class.overlay) {
+                        Dom.class.overlay.classList.remove('show');
+                    }
+                    Dom.main.classList.remove('sidebar-noneoverflow');
+                });
+            }
         },
         search: function() {
 
@@ -165,23 +199,34 @@ var App = function() {
                 
                 Dom.class.search.addEventListener('click', function(event) {
                     this.classList.add('show-search');
-                    Dom.class.searchOverlay.classList.add('show');
+                    if (Dom.class.searchOverlay) {
+                        Dom.class.searchOverlay.classList.add('show');
+                    }
                     document.querySelector('body').classList.add('search-active');
                 });
                 
-                Dom.class.searchOverlay.addEventListener('click', function(event) {
-                    this.classList.remove('show');
-                    Dom.class.search.classList.remove('show-search');
-                    document.querySelector('body').classList.remove('search-active');
-                });
+                if (Dom.class.searchOverlay) {
+                    Dom.class.searchOverlay.addEventListener('click', function(event) {
+                        this.classList.remove('show');
+                        Dom.class.search.classList.remove('show-search');
+                        document.querySelector('body').classList.remove('search-active');
+                    });
+                }
                 
-                document.querySelector('.search-close').addEventListener('click', function(event) {
-                    event.stopPropagation();
-                    Dom.class.searchOverlay.classList.remove('show');
-                    Dom.class.search.classList.remove('show-search');
-                    document.querySelector('body').classList.remove('search-active');
-                    document.querySelector('.search-form-control').value = ''
-                });
+                var searchClose = document.querySelector('.search-close');
+                if (searchClose) {
+                    searchClose.addEventListener('click', function(event) {
+                        event.stopPropagation();
+                        if (Dom.class.searchOverlay) {
+                            Dom.class.searchOverlay.classList.remove('show');
+                        }
+                        Dom.class.search.classList.remove('show-search');
+                        document.querySelector('body').classList.remove('search-active');
+                        if (Dom.class.searchForm) {
+                            Dom.class.searchForm.value = ''
+                        }
+                    });
+                }
             }
 
         },
@@ -190,64 +235,69 @@ var App = function() {
             var togglethemeEl = document.querySelector('.theme-toggle');
             var getBodyEl = document.body;
             
-            togglethemeEl.addEventListener('click', function() {
-                
-                var getLocalStorage = sessionStorage.getItem("theme");
-                var parseObj = JSON.parse(getLocalStorage);
-
-                if (parseObj.settings.layout.darkMode) {
-
-                    var getObjectSettings = parseObj.settings.layout;
-
-                    var newParseObject = {...getObjectSettings, darkMode: false};
-
-                    var newObject = { ...parseObj, settings: { layout: newParseObject }}
-
-                    sessionStorage.setItem("theme", JSON.stringify(newObject))
+            // Only add event listener if element exists
+            if (togglethemeEl) {
+                togglethemeEl.addEventListener('click', function() {
                     
-                    var getUpdatedLocalObject = sessionStorage.getItem("theme");
-                    var getUpdatedParseObject = JSON.parse(getUpdatedLocalObject);
+                    var getLocalStorage = sessionStorage.getItem("theme");
+                    if (!getLocalStorage) return; // Exit if no theme in session
+                    
+                    var parseObj = JSON.parse(getLocalStorage);
 
-                    if (!getUpdatedParseObject.settings.layout.darkMode) {
-                        document.body.classList.remove('dark')
-                        let ifStarterKit = document.body.getAttribute('page') === 'starter-pack' ? true : false;
-                        if (ifStarterKit) {
-                            // document.querySelector('.navbar-logo').setAttribute('src', '../../src/assets/img/logo2.svg')
-                        } else {
-                            // document.querySelector('.navbar-logo').setAttribute('src', getUpdatedParseObject.settings.layout.logo.lightLogo)
+                    if (parseObj.settings.layout.darkMode) {
+
+                        var getObjectSettings = parseObj.settings.layout;
+
+                        var newParseObject = {...getObjectSettings, darkMode: false};
+
+                        var newObject = { ...parseObj, settings: { layout: newParseObject }}
+
+                        sessionStorage.setItem("theme", JSON.stringify(newObject))
+                        
+                        var getUpdatedLocalObject = sessionStorage.getItem("theme");
+                        var getUpdatedParseObject = JSON.parse(getUpdatedLocalObject);
+
+                        if (!getUpdatedParseObject.settings.layout.darkMode) {
+                            document.body.classList.remove('dark')
+                            let ifStarterKit = document.body.getAttribute('page') === 'starter-pack' ? true : false;
+                            if (ifStarterKit) {
+                                // document.querySelector('.navbar-logo').setAttribute('src', '../../src/assets/img/logo2.svg')
+                            } else {
+                                // document.querySelector('.navbar-logo').setAttribute('src', getUpdatedParseObject.settings.layout.logo.lightLogo)
+                            }
                         }
-                    }
-                    
-                } else {
+                        
+                    } else {
 
-                    var getObjectSettings = parseObj.settings.layout;
+                        var getObjectSettings = parseObj.settings.layout;
 
-                    var newParseObject = {...getObjectSettings, darkMode: true};
+                        var newParseObject = {...getObjectSettings, darkMode: true};
 
-                    var newObject = { ...parseObj, settings: { layout: newParseObject }}
+                        var newObject = { ...parseObj, settings: { layout: newParseObject }}
 
-                    sessionStorage.setItem("theme", JSON.stringify(newObject))
-                    
-                    var getUpdatedLocalObject = sessionStorage.getItem("theme");
-                    var getUpdatedParseObject = JSON.parse(getUpdatedLocalObject);
+                        sessionStorage.setItem("theme", JSON.stringify(newObject))
+                        
+                        var getUpdatedLocalObject = sessionStorage.getItem("theme");
+                        var getUpdatedParseObject = JSON.parse(getUpdatedLocalObject);
 
-                    if (getUpdatedParseObject.settings.layout.darkMode) {
-                        document.body.classList.add('dark')
+                        if (getUpdatedParseObject.settings.layout.darkMode) {
+                            document.body.classList.add('dark')
 
-                        let ifStarterKit = document.body.getAttribute('page') === 'starter-pack' ? true : false;
+                            let ifStarterKit = document.body.getAttribute('page') === 'starter-pack' ? true : false;
 
-                        if (ifStarterKit) {
-                            // document.querySelector('.navbar-logo').setAttribute('src', '../../src/assets/img/logo.svg')
-                        } else {
-                            // document.querySelector('.navbar-logo').setAttribute('src', getUpdatedParseObject.settings.layout.logo.darkLogo)
+                            if (ifStarterKit) {
+                                // document.querySelector('.navbar-logo').setAttribute('src', '../../src/assets/img/logo.svg')
+                            } else {
+                                // document.querySelector('.navbar-logo').setAttribute('src', getUpdatedParseObject.settings.layout.logo.darkLogo)
+                            }
+                            
                         }
                         
                     }
                     
-                }
-                
-                // sessionStorage.clear()
-            })
+                    // sessionStorage.clear()
+                })
+            }
             
         }
     }
@@ -281,32 +331,43 @@ var App = function() {
         preventScrollBody: function() {
             var nonScrollableElement = document.querySelectorAll('#sidebar, .user-profile-dropdown .dropdown-menu, .notification-dropdown .dropdown-menu,  .language-dropdown .dropdown-menu')
 
+            if (nonScrollableElement.length === 0) {
+                return; // Exit if no elements found
+            }
+
             var preventScrolling = function(e) {
                 e = e || window.event;
                 if (e.preventDefault)
                     e.preventDefault();
                 e.returnValue = false;  
 
-                nonScrollableElement.scrollTop -= e. wheelDeltaY; 
+                nonScrollableElement.forEach(el => {
+                    el.scrollTop -= e.wheelDeltaY;
+                });
             }
 
             nonScrollableElement.forEach(preventScroll => {
-
                 preventScroll.addEventListener('mousewheel', preventScrolling);
                 preventScroll.addEventListener('DOMMouseScroll', preventScrolling);
-                
             });
         },
         searchKeyBind: function() {
 
             if (Dom.class.search) {
-                Mousetrap.bind('ctrl+/', function() {
-                    document.body.classList.add('search-active');
-                    Dom.class.search.classList.add('show-search');
-                    Dom.class.searchOverlay.classList.add('show');
-                    Dom.class.searchForm.focus();
-                    return false;
-                });
+                // Only bind if Mousetrap is available
+                if (typeof Mousetrap !== 'undefined') {
+                    Mousetrap.bind('ctrl+/', function() {
+                        document.body.classList.add('search-active');
+                        Dom.class.search.classList.add('show-search');
+                        if (Dom.class.searchOverlay) {
+                            Dom.class.searchOverlay.classList.add('show');
+                        }
+                        if (Dom.class.searchForm) {
+                            Dom.class.searchForm.focus();
+                        }
+                        return false;
+                    });
+                }
             }
 
         },
@@ -393,6 +454,11 @@ var App = function() {
     function sidebarFunctionality() {
         function sidebarCloser() {
 
+            // Validate that required elements exist
+            if (!Dom.id.container || !Dom.class.overlay) {
+                return; // Exit if required elements don't exist
+            }
+
             if (window.innerWidth <= 991 ) {
 
                 if (!document.querySelector('body').classList.contains('alt-menu')) {
@@ -400,7 +466,9 @@ var App = function() {
                     Dom.id.container.classList.add("sidebar-closed");
                     Dom.class.overlay.classList.remove('show');
                 } else {
-                    Dom.class.navbar.classList.remove("expand-header");
+                    if (Dom.class.navbar) {
+                        Dom.class.navbar.classList.remove("expand-header");
+                    }
                     Dom.class.overlay.classList.remove('show');
                     Dom.id.container.classList.remove('sbar-open');
                     Dom.main.classList.remove('sidebar-noneoverflow');
@@ -411,19 +479,27 @@ var App = function() {
                 if (!document.querySelector('body').classList.contains('alt-menu')) {
 
                     Dom.id.container.classList.remove("sidebar-closed");
-                    Dom.class.navbar.classList.remove("expand-header");
+                    if (Dom.class.navbar) {
+                        Dom.class.navbar.classList.remove("expand-header");
+                    }
                     Dom.class.overlay.classList.remove('show');
                     Dom.id.container.classList.remove('sbar-open');
                     Dom.main.classList.remove('sidebar-noneoverflow');
                 } else {
                     Dom.main.classList.add('sidebar-noneoverflow');
                     Dom.id.container.classList.add("sidebar-closed");
-                    Dom.class.navbar.classList.add("expand-header");
+                    if (Dom.class.navbar) {
+                        Dom.class.navbar.classList.add("expand-header");
+                    }
                     Dom.class.overlay.classList.add('show');
                     Dom.id.container.classList.add('sbar-open');
 
-                    if (document.querySelector('.sidebar-wrapper [aria-expanded="true"]')) {
-                        document.querySelector('.sidebar-wrapper [aria-expanded="true"]').parentNode.querySelector('.collapse').classList.remove('show');
+                    var expandedElement = document.querySelector('.sidebar-wrapper [aria-expanded="true"]');
+                    if (expandedElement && expandedElement.parentNode) {
+                        var collapseEl = expandedElement.parentNode.querySelector('.collapse');
+                        if (collapseEl) {
+                            collapseEl.classList.remove('show');
+                        }
                     }
 
                 }
@@ -431,9 +507,12 @@ var App = function() {
         }
 
         function sidebarMobCheck() {
+            var mainContainer = document.querySelector('.main-container');
+            if (!mainContainer) return; // Exit if main-container doesn't exist
+            
             if (window.innerWidth <= 991 ) {
 
-                if ( document.querySelector('.main-container').classList.contains('sbar-open') ) {
+                if ( mainContainer.classList.contains('sbar-open') ) {
                     return;
                 } else {
                     sidebarCloser()

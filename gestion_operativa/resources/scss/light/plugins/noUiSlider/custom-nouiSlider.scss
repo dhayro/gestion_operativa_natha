@@ -1,4 +1,4 @@
-@import '../../base/base';
+@use '../../base/base' as *;
 .noUi-target {
   background: #ffffff;
   border-radius: 4px;

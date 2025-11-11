@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Suministro;
 use App\Models\Medidor;
 use App\Models\Ubigeo;
+use App\Models\MedidorSuministro;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -122,7 +123,21 @@ class SuministroController extends Controller
         ]);
 
         try {
+            $validatedData['usuario_creacion_id'] = auth()->id() ?? 1;
             $suministro = Suministro::create($validatedData);
+
+            // ====== NUEVO: Registrar en medidor_suministros ======
+            if ($validatedData['medidor_id']) {
+                MedidorSuministro::create([
+                    'suministro_id' => $suministro->id,
+                    'medidor_id' => $validatedData['medidor_id'],
+                    'fecha_cambio' => now(),
+                    'observaciones' => "Medidor asignado al crear el suministro",
+                    'estado' => 1,
+                    'usuario_creacion_id' => auth()->id() ?? 1
+                ]);
+            }
+            // ====== FIN: Registrar en medidor_suministros ======
 
             return response()->json([
                 'success' => true,
@@ -205,6 +220,43 @@ class SuministroController extends Controller
         ]);
 
         try {
+            $validatedData['usuario_actualizacion_id'] = auth()->id() ?? 1;
+            
+            // ====== NUEVO: Registrar cambio de medidor en medidor_suministros ======
+            // Si cambió el medidor, crear un nuevo registro histórico
+            if ($suministro->medidor_id != $validatedData['medidor_id']) {
+                // Obtener datos del medidor anterior
+                $medidorAnterior = $suministro->medidor;
+                $medidorAnteriorInfo = $medidorAnterior 
+                    ? "ID: {$suministro->medidor_id}, Serie: {$medidorAnterior->serie}, Modelo: {$medidorAnterior->modelo}"
+                    : "N/A";
+                
+                // Crear registro histórico del nuevo medidor
+                if ($validatedData['medidor_id']) {
+                    MedidorSuministro::create([
+                        'suministro_id' => $suministro->id,
+                        'medidor_id' => $validatedData['medidor_id'],
+                        'fecha_cambio' => now(),
+                        'observaciones' => "Cambio de medidor - Anterior: {$medidorAnteriorInfo}",
+                        'estado' => 1,
+                        'usuario_creacion_id' => auth()->id() ?? 1
+                    ]);
+                }
+                
+                // Marcar el registro anterior como inactivo
+                if ($suministro->medidor_id) {
+                    MedidorSuministro::where('suministro_id', $suministro->id)
+                        ->where('medidor_id', $suministro->medidor_id)
+                        ->latest()
+                        ->first()?->update([
+                            'estado' => 0,
+                            'observaciones' => "Medidor reemplazado por: {$medidorAnteriorInfo}",
+                            'usuario_actualizacion_id' => auth()->id() ?? 1
+                        ]);
+                }
+            }
+            // ====== FIN: Registrar cambio de medidor ======
+            
             $suministro->update($validatedData);
 
             return response()->json([
@@ -224,6 +276,26 @@ class SuministroController extends Controller
     {
         try {
             $suministro = Suministro::findOrFail($id);
+            
+            // ====== NUEVO: Registrar eliminación en medidor_suministros ======
+            if ($suministro->medidor_id) {
+                // Obtener datos del medidor
+                $medidorActual = $suministro->medidor;
+                $medidorInfo = $medidorActual 
+                    ? "ID: {$suministro->medidor_id}, Serie: {$medidorActual->serie}, Modelo: {$medidorActual->modelo}"
+                    : "N/A";
+                
+                MedidorSuministro::where('suministro_id', $suministro->id)
+                    ->where('medidor_id', $suministro->medidor_id)
+                    ->latest()
+                    ->first()?->update([
+                        'estado' => 0,
+                        'observaciones' => "Suministro eliminado - Medidor: {$medidorInfo}",
+                        'usuario_actualizacion_id' => auth()->id() ?? 1
+                    ]);
+            }
+            // ====== FIN: Registrar eliminación ======
+            
             $suministro->delete();
 
             return response()->json([
@@ -328,6 +400,42 @@ class SuministroController extends Controller
             ], 404);
         }
     }
+
+    // ====== NUEVO: Obtener historial de medidores de un suministro ======
+    public function getMedidoresHistorial($suministroId)
+    {
+        try {
+            $suministro = Suministro::findOrFail($suministroId);
+            
+            $historial = MedidorSuministro::with('medidor', 'fichaActividad')
+                ->where('suministro_id', $suministroId)
+                ->orderBy('fecha_cambio', 'desc')
+                ->get()
+                ->map(function ($registro) {
+                    return [
+                        'id' => $registro->id,
+                        'medidor_id' => $registro->medidor_id,
+                        'medidor_serie' => $registro->medidor?->serie ?? 'N/A',
+                        'fecha_cambio' => $registro->fecha_cambio->format('d/m/Y H:i'),
+                        'observaciones' => $registro->observaciones,
+                        'estado' => $registro->estado ? 'Activo' : 'Inactivo',
+                        'ficha_id' => $registro->fichaActividad?->id,
+                        'ficha_descripcion' => $registro->fichaActividad?->descripcion
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $historial
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener el historial: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    // ====== FIN: Obtener historial ======
 
     // Obtener Medidores (que no estén asignados a otros suministros)
     public function getMedidores(Request $request)

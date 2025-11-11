@@ -1,4 +1,4 @@
-@import '../../base/base';
+@use '../../base/base' as *;
 .modal-backdrop {
   background: linear-gradient(75deg, rgba(22, 28, 36, 0.48) 0%, rgb(22, 28, 36) 100%);
 

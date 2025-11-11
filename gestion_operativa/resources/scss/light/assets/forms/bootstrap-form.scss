@@ -1,4 +1,4 @@
-@import '../../base/base';
+@use '../../base/base' as *;
 .row .col-lg-12 .widget .widget-header h4 {
   color: #000000;
   font-size: 20px;

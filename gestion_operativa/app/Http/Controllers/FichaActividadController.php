@@ -13,6 +13,7 @@ use App\Models\Situacion;
 use App\Repositories\FichaActividadRepository;
 use App\Repositories\Contracts\FichaActividadRepositoryContract;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Yajra\DataTables\Facades\DataTables;
 
 class FichaActividadController extends Controller
@@ -44,6 +45,7 @@ class FichaActividadController extends Controller
     public function getData(Request $request)
     {
         if ($request->ajax()) {
+            // Inicializar query
             $fichas = FichaActividad::select([
                 'id',
                 'suministro_id',
@@ -52,6 +54,38 @@ class FichaActividadController extends Controller
                 'fecha',
                 'estado'
             ])->orderBy('fecha', 'desc');
+
+            // Filtrar por rol del usuario
+            // Admin y Supervisor ven todas las fichas
+            // Otros ven fichas de su cuadrilla O fichas donde son participantes O fichas que crearon
+            if (!$this->isAdminOrSupervisor()) {
+                $userId = Auth::id();
+                $userCuadrillaEmpleado = $this->getUserCuadrillaEmpleado();
+                
+                if ($userCuadrillaEmpleado) {
+                    $cuadrillaId = $userCuadrillaEmpleado->cuadrilla_id;
+                    $cuadrillaEmpleadoId = $userCuadrillaEmpleado->id;
+                    
+                    // Ver fichas de su cuadrilla (con 2 joins) O fichas donde es participante O fichas que creó
+                    $fichas->where(function ($query) use ($cuadrillaId, $cuadrillaEmpleadoId, $userId) {
+                        // Fichas de su cuadrilla: pecosa -> cuadrilla_empleado -> cuadrilla
+                        $query->whereHas('pecosa', function ($q) use ($cuadrillaId) {
+                            $q->whereHas('cuadrillaEmpleado', function ($q2) use ($cuadrillaId) {
+                                $q2->where('cuadrilla_id', $cuadrillaId);
+                            });
+                        })
+                        // O fichas donde es participante
+                        ->orWhereHas('fichaEmpleados', function ($q) use ($cuadrillaEmpleadoId) {
+                            $q->where('cuadrilla_empleado_id', $cuadrillaEmpleadoId);
+                        })
+                        // O fichas que creó
+                        ->orWhere('usuario_creacion_id', $userId);
+                    });
+                } else {
+                    // Si no tiene cuadrilla, mostrar solo fichas que creó
+                    $fichas->where('usuario_creacion_id', $userId);
+                }
+            }
 
             return DataTables::of($fichas)
                 ->addIndexColumn()
@@ -144,6 +178,14 @@ class FichaActividadController extends Controller
         try {
             $ficha = $this->fichaRepository->obtenerPorId($id);
             
+            // Verificar permisos
+            if (!$this->canAccessFicha($ficha)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tienes permiso para ver esta ficha'
+                ], 403);
+            }
+            
             return response()->json([
                 'success' => true,
                 'data' => $ficha
@@ -170,6 +212,23 @@ class FichaActividadController extends Controller
      */
     public function update(Request $request, $id)
     {
+        try {
+            $ficha = FichaActividad::findOrFail($id);
+            
+            // Verificar permisos
+            if (!$this->canAccessFicha($ficha)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tienes permiso para actualizar esta ficha'
+                ], 403);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ficha no encontrada'
+            ], 404);
+        }
+
         $validatedData = $request->validate([
             'tipo_actividad_id' => 'required|exists:tipos_actividads,id',
             'suministro_id' => 'required|exists:suministros,id',
@@ -212,6 +271,16 @@ class FichaActividadController extends Controller
     public function destroy($id)
     {
         try {
+            $ficha = FichaActividad::findOrFail($id);
+            
+            // Verificar permisos
+            if (!$this->canAccessFicha($ficha)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tienes permiso para eliminar esta ficha'
+                ], 403);
+            }
+            
             $this->fichaRepository->eliminar($id);
 
             return response()->json([
@@ -291,4 +360,85 @@ class FichaActividadController extends Controller
             ], 500);
         }
     }
+
+    // ==================== MÉTODOS PRIVADOS ====================
+
+    /**
+     * Obtener el CuadrillaEmpleado del usuario autenticado
+     * @return CuadrillaEmpleado|null
+     */
+    private function getUserCuadrillaEmpleado()
+    {
+        $user = Auth::user();
+        if (!$user || !$user->empleado) {
+            return null;
+        }
+
+        return $user->empleado->cuadrillaEmpleados()
+            ->where('estado', true)
+            ->orderBy('created_at', 'desc')
+            ->first();
+    }
+
+    /**
+     * Obtener la cuadrilla activa del usuario autenticado (conveniencia)
+     * @return int|null ID de la cuadrilla o null si no tiene
+     */
+    private function getUserCuadrillaId()
+    {
+        return $this->getUserCuadrillaEmpleado()?->cuadrilla_id;
+    }
+
+    /**
+     * Verificar si el usuario es Admin o Supervisor
+     * @return bool
+     */
+    private function isAdminOrSupervisor()
+    {
+        $user = Auth::user();
+        return $user && $user->perfil && in_array($user->perfil, ['admin', 'supervisor']);
+    }
+
+    /**
+     * Verificar si el usuario tiene permiso para acceder a una ficha
+     * El usuario puede ver una ficha si:
+     * 1. Es Admin o Supervisor (ve todas)
+     * 2. La ficha pertenece a su cuadrilla (a través de PECOSA)
+     * 3. Es participante registrado en ficha_actividad_empleados
+     * 4. Es el creador de la ficha (usuario_creacion_id)
+     * 
+     * @param FichaActividad $ficha
+     * @return bool
+     */
+    private function canAccessFicha(FichaActividad $ficha)
+    {
+        // Admin/Supervisor pueden ver cualquier ficha
+        if ($this->isAdminOrSupervisor()) {
+            return true;
+        }
+
+        $user = Auth::user();
+        
+        // Condición: Es el creador de la ficha
+        if ($user && $ficha->usuario_creacion_id == $user->id) {
+            return true;
+        }
+
+        // Obtener el CuadrillaEmpleado del usuario
+        $userCuadrillaEmpleado = $this->getUserCuadrillaEmpleado();
+        if (!$userCuadrillaEmpleado) {
+            return false;
+        }
+
+        // Condición 1: La ficha pertenece a su cuadrilla
+        $belongsToUserCuadrilla = $ficha->pecosa?->cuadrillaEmpleado?->cuadrilla_id == $userCuadrillaEmpleado->cuadrilla_id;
+
+        // Condición 2: El usuario es participante en la ficha
+        $isParticipant = $ficha->fichaEmpleados()
+            ->where('cuadrilla_empleado_id', $userCuadrillaEmpleado->id)
+            ->exists();
+
+        return $belongsToUserCuadrilla || $isParticipant;
+    }
 }
+

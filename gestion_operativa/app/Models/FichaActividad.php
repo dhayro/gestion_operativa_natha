@@ -14,6 +14,7 @@ class FichaActividad extends Model
     protected $fillable = [
         'tipo_actividad_id',
         'suministro_id',
+        'pecosa_id',
         'tipo_propiedad_id',
         'construccion_id',
         'servicio_electrico_id',
@@ -49,6 +50,14 @@ class FichaActividad extends Model
     public function suministro()
     {
         return $this->belongsTo(Suministro::class, 'suministro_id');
+    }
+
+    /**
+     * Relación con Pecosa (de donde salen los materiales)
+     */
+    public function pecosa()
+    {
+        return $this->belongsTo(Pecosa::class, 'pecosa_id');
     }
 
     /**
@@ -148,11 +157,43 @@ class FichaActividad extends Model
     }
 
     /**
-     * Relación con Precintos
+     * Relación con MaterialFichaActividad (relación directa)
+     */
+    public function materialFichas()
+    {
+        return $this->hasMany(MaterialFichaActividad::class, 'ficha_actividad_id');
+    }
+
+    /**
+     * Relación con MedidorFichaActividad (relación directa)
+     */
+    public function medidorFichas()
+    {
+        return $this->hasMany(MedidorFichaActividad::class, 'ficha_actividad_id');
+    }
+
+    /**
+     * Relación con FichaActividadEmpleado (relación directa)
+     */
+    public function fichaEmpleados()
+    {
+        return $this->hasMany(FichaActividadEmpleado::class, 'ficha_actividad_id');
+    }
+
+    /**
+     * Relación con PrecintoFichaActividad (relación directa)
      */
     public function precintos()
     {
         return $this->hasMany(PrecintoFichaActividad::class, 'ficha_actividad_id');
+    }
+
+    /**
+     * Relación con MedidorSuministro
+     */
+    public function medidorSuministros()
+    {
+        return $this->hasMany(MedidorSuministro::class, 'ficha_actividad_id');
     }
 
     /**
@@ -161,6 +202,14 @@ class FichaActividad extends Model
     public function materiales()
     {
         return $this->belongsToMany(Material::class, 'material_ficha_actividades', 'ficha_actividad_id', 'material_id');
+    }
+
+    /**
+     * Relación con movimientos de materiales de pecosa
+     */
+    public function materialMovimientos()
+    {
+        return $this->hasMany(MaterialPecosaMovimiento::class, 'ficha_actividad_id');
     }
 
     // ==================== SCOPES ====================

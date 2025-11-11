@@ -2,6 +2,19 @@ import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 
 export default defineConfig({
+    css: {
+        preprocessorOptions: {
+            scss: {
+                api: 'modern',
+                // Suppress deprecation warnings
+                verbose: false,
+                includePaths: [
+                    'resources/scss/light/base',
+                    'resources/scss/dark/base'
+                ]
+            }
+        }
+    },
     server: {
         host: '0.0.0.0',
         port: 5174,

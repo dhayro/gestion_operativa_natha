@@ -41,6 +41,12 @@ class Suministro extends Model
         return $this->belongsTo(Medidor::class, 'medidor_id');
     }
 
+    // Relación muchos a muchos con Medidor a través de MedidorSuministro (historial)
+    public function medidoresHistorial()
+    {
+        return $this->hasMany(MedidorSuministro::class, 'suministro_id');
+    }
+
     // Relación con Ubigeo (Distrito)
     public function ubigeo()
     {
