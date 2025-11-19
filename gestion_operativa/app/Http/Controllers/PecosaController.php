@@ -178,6 +178,69 @@ class PecosaController extends Controller
     }
 
     /**
+     * Obtener PECOSAs de una cuadrilla específica (para agregar materiales en fichas)
+     * GET /pecosas/cuadrilla/{cuadrillaId}/pecosas
+     */
+    public function getPecosasPorCuadrillaId($cuadrillaId)
+    {
+        try {
+            // Obtener todas las PECOSAS activas asignadas a esta cuadrilla
+            $pecosas = Pecosa::with([
+                'detalles.neaDetalle.material.unidadMedida',
+                'cuadrillaEmpleado.cuadrilla'
+            ])
+            ->whereHas('cuadrillaEmpleado', function ($query) use ($cuadrillaId) {
+                $query->where('cuadrilla_id', $cuadrillaId);
+            })
+            ->where('estado', true)
+            ->latest('fecha')
+            ->get();
+
+            // Construir respuesta con materiales disponibles
+            $materialesDisponibles = [];
+            
+            foreach ($pecosas as $pecosa) {
+                foreach ($pecosa->detalles as $detalle) {
+                    $material = $detalle->neaDetalle->material;
+                    
+                    // Calcular saldo disponible del material en esta PECOSA
+                    $saldo = \App\Models\MaterialPecosaMovimiento::where('pecosa_id', $pecosa->id)
+                        ->where('material_id', $material->id)
+                        ->where('estado', true)
+                        ->sum(DB::raw("CASE WHEN tipo_movimiento = 'entrada' THEN cantidad ELSE -cantidad END"));
+                    
+                    if ($saldo > 0) {
+                        $materialesDisponibles[] = [
+                            'id' => $material->id,
+                            'nombre' => $material->nombre,
+                            'codigo_material' => $material->codigo_material,
+                            'unidad_medida' => $material->unidadMedida ? $material->unidadMedida->nombre : 'UND',
+                            'precio_unitario' => $detalle->precio_unitario,
+                            'saldo_disponible' => $saldo,
+                            'pecosa_id' => $pecosa->id,
+                            'text' => $material->nombre . ' (' . number_format($saldo, 2) . ' ' . ($material->unidadMedida ? $material->unidadMedida->abreviatura : 'UND') . ')'
+                        ];
+                    }
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $materialesDisponibles,
+                'pecosas' => $pecosas,
+                'message' => count($materialesDisponibles) . ' materiales disponibles'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error en getPecosasPorCuadrillaId: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'data' => [],
+                'message' => 'Error al cargar materiales: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Crear nueva PECOSA
      */
     public function store(Request $request)
@@ -222,9 +285,26 @@ class PecosaController extends Controller
                 ]);
 
                 // Crear movimiento de entrada en tabla 'movimientos' (NEA -> PECOSA)
+                // NOTA: La ENTRADA ya se registró cuando llegó la NEA
+                // Aquí solo registramos la SALIDA hacia la cuadrilla
+                // Movimiento::create([
+                //     'material_id' => $neaDetalle->material_id,
+                //     'tipo_movimiento' => 'entrada',
+                //     'nea_detalle_id' => $detalle['nea_detalle_id'],
+                //     'pecosa_detalle_id' => $pecosaDetalle->id,
+                //     'cantidad' => $detalle['cantidad'],
+                //     'precio_unitario' => $neaDetalle->precio_unitario,
+                //     'incluye_igv' => $neaDetalle->incluye_igv,
+                //     'fecha' => $request->fecha,
+                //     'estado' => true,
+                //     'usuario_creacion_id' => Auth::id()
+                // ]);
+
+                // Crear movimiento de SALIDA en tabla 'movimientos' (PECOSA -> CUADRILLA)
+                // Esto registra la salida del almacén hacia la cuadrilla
                 Movimiento::create([
                     'material_id' => $neaDetalle->material_id,
-                    'tipo_movimiento' => 'entrada',
+                    'tipo_movimiento' => 'salida',
                     'nea_detalle_id' => $detalle['nea_detalle_id'],
                     'pecosa_detalle_id' => $pecosaDetalle->id,
                     'cantidad' => $detalle['cantidad'],

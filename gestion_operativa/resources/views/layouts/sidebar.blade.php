@@ -85,6 +85,9 @@
                     <li class="{{ Request::routeIs('materiales.index') ? 'active' : '' }}">
                         <a href="{{ route('materiales.index') }}">Materiales</a>
                     </li>
+                    <li class="{{ Request::routeIs('stock_materiales.index') ? 'active' : '' }}">
+                        <a href="{{ route('stock_materiales.index') }}">📦 Stock por Cuadrilla</a>
+                    </li>
                     <li class="{{ Request::routeIs('proveedores.index') ? 'active' : '' }}">
                         <a href="{{ route('proveedores.index') }}">Proveedores</a>
                     </li>

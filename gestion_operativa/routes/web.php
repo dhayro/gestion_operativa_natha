@@ -37,6 +37,7 @@ use App\Http\Controllers\FichaActividadController;
 use App\Http\Controllers\FichaActividadDetalleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ConsultaNeaController;
+use App\Http\Controllers\MaterialStockController;
 
 Route::get('/test-email', function () {
     try {
@@ -125,6 +126,16 @@ Route::prefix('materiales')->group(function () {
     Route::get('/{material}', [MaterialController::class, 'show'])->name('materiales.show');
     Route::put('/{material}', [MaterialController::class, 'update'])->name('materiales.update');
     Route::delete('/{material}', [MaterialController::class, 'destroy'])->name('materiales.destroy');
+});
+
+// Stock de Materiales - Consulta por Cuadrilla
+Route::prefix('stock-materiales')->group(function () {
+    Route::get('/', [MaterialStockController::class, 'index'])->name('stock_materiales.index');
+    Route::get('/cuadrilla/{id}', [MaterialStockController::class, 'obtenerCuadrilla'])->name('stock_materiales.obtenerCuadrilla');
+    Route::get('/{cuadrillaId}/data', [MaterialStockController::class, 'getStockData'])->name('stock_materiales.getData')->whereNumber('cuadrillaId');
+    Route::get('/{materialId}/movimientos/{cuadrillaId}', [MaterialStockController::class, 'getMovimientos'])->name('stock_materiales.getMovimientos')->whereNumber('materialId')->whereNumber('cuadrillaId');
+    Route::get('/{cuadrillaId}/reporte', [MaterialStockController::class, 'exportarReporte'])->name('stock_materiales.exportarReporte')->whereNumber('cuadrillaId');
+    Route::get('/export/csv', [MaterialStockController::class, 'exportCsv'])->name('stock_materiales.exportCsv');
 });
 
 
@@ -291,6 +302,7 @@ Route::prefix('pecosas')->group(function () {
     Route::get('/empleados/{cuadrillaId}', [PecosaController::class, 'getEmpleadosCuadrilla'])->name('pecosas.getEmpleados');
     Route::get('/nea-detalles/{cuadrillaEmpleadoId}', [PecosaController::class, 'getNeaDetallesDisponibles'])->name('pecosas.getNeaDetalles');
     Route::get('/todas', [AdminPecosaController::class, 'getPecosasDisponibles'])->name('pecosas.todas');
+    Route::get('/cuadrilla/{cuadrillaId}/pecosas', [PecosaController::class, 'getPecosasPorCuadrillaId'])->name('pecosas.cuadrilla.pecosas')->whereNumber('cuadrillaId');
     
     // Rutas para gestión de materiales de pecosa (desde Admin\PecosaController)
     Route::get('/cuadrilla/{cuadrillaEmpleadoId}/pecosas', [AdminPecosaController::class, 'getPecosasPorCuadrilla'])->name('pecosas.porCuadrilla')->whereNumber('cuadrillaEmpleadoId');
@@ -433,6 +445,7 @@ Route::prefix('fichas-actividad')->name('fichas_actividad.')->group(function () 
     Route::post('/{fichaId}/detalles/fotos', [FichaActividadDetalleController::class, 'fotosStore'])->name('detalles.fotos.store')->whereNumber('fichaId');
     Route::put('/{fichaId}/detalles/fotos/{fotoId}', [FichaActividadDetalleController::class, 'fotosUpdate'])->name('detalles.fotos.update')->whereNumber('fichaId')->whereNumber('fotoId');
     Route::delete('/{fichaId}/detalles/fotos/{fotoId}', [FichaActividadDetalleController::class, 'fotosDestroy'])->name('detalles.fotos.destroy')->whereNumber('fichaId')->whereNumber('fotoId');
+    Route::get('/{fichaId}/detalles/fotos/{fotoId}', [FichaActividadDetalleController::class, 'getFoto'])->name('detalles.fotos.get.one')->whereNumber('fichaId')->whereNumber('fotoId');
     Route::get('/{fichaId}/detalles/fotos', [FichaActividadDetalleController::class, 'getFotos'])->name('detalles.fotos.get')->whereNumber('fichaId');
 
     // Precintos
