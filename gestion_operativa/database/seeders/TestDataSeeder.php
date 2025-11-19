@@ -286,21 +286,33 @@ class TestDataSeeder extends Seeder
             echo " ✓ (2 suministros)\n";
 
             echo "[16] Creando Fichas Actividad...";
-            $fichaA = FichaActividad::create([
+            $fichaA1 = FichaActividad::create([
                 'suministro_id' => $sumin1->id,
                 'tipo_actividad_id' => $tipoInspeccion->id,
                 'estado' => true
             ]);
-            $fichaB = FichaActividad::create([
+            $fichaA2 = FichaActividad::create([
+                'suministro_id' => $sumin1->id,
+                'tipo_actividad_id' => $tipoInspeccion->id,
+                'estado' => true
+            ]);
+            $fichaB1 = FichaActividad::create([
                 'suministro_id' => $sumin2->id,
                 'tipo_actividad_id' => $tipoMantenimiento->id,
                 'estado' => true
             ]);
-            echo " ✓ (2 fichas)\n";
+            $fichaB2 = FichaActividad::create([
+                'suministro_id' => $sumin2->id,
+                'tipo_actividad_id' => $tipoMantenimiento->id,
+                'estado' => true
+            ]);
+            echo " ✓ (4 fichas: 2 para Cuadrilla A + 2 para Cuadrilla B)\n";
 
             echo "[17] Asociando Medidores a Fichas...";
-            $fichaA->medidores()->attach([$med1->id, $med2->id]);
-            $fichaB->medidores()->attach([$med1->id]);
+            $fichaA1->medidores()->attach([$med1->id, $med2->id]);
+            $fichaA2->medidores()->attach([$med1->id, $med2->id]);
+            $fichaB1->medidores()->attach([$med1->id]);
+            $fichaB2->medidores()->attach([$med1->id]);
             echo " ✓\n";
 
             // ==================== MATERIALES Y NEA ====================
@@ -433,11 +445,11 @@ class TestDataSeeder extends Seeder
             ]);
             echo " ✓\n";
 
-            echo "[24] Agregando detalles a NEA...";
+            echo "[24] Agregando detalles a NEA (3 materiales: 200, 300, 50)...";
             $neaDetCable = NeaDetalle::create([
                 'nea_id' => $nea->id,
                 'material_id' => $matCable->id,
-                'cantidad' => 100,
+                'cantidad' => 200,
                 'precio_unitario' => 15.50,
                 'incluye_igv' => true,
                 'estado' => true,
@@ -446,7 +458,7 @@ class TestDataSeeder extends Seeder
             $neaDetConector = NeaDetalle::create([
                 'nea_id' => $nea->id,
                 'material_id' => $matConector->id,
-                'cantidad' => 500,
+                'cantidad' => 300,
                 'precio_unitario' => 8.75,
                 'incluye_igv' => true,
                 'estado' => true,
@@ -455,22 +467,13 @@ class TestDataSeeder extends Seeder
             $neaDetAlicate = NeaDetalle::create([
                 'nea_id' => $nea->id,
                 'material_id' => $matAlicate->id,
-                'cantidad' => 10,
+                'cantidad' => 50,
                 'precio_unitario' => 25.00,
                 'incluye_igv' => true,
                 'estado' => true,
                 'usuario_creacion_id' => $userAdmin->id
             ]);
-            $neaDetCinta = NeaDetalle::create([
-                'nea_id' => $nea->id,
-                'material_id' => $matCinta->id,
-                'cantidad' => 200,
-                'precio_unitario' => 3.50,
-                'incluye_igv' => true,
-                'estado' => true,
-                'usuario_creacion_id' => $userAdmin->id
-            ]);
-            echo " ✓ (4 detalles)\n";
+            echo " ✓ (3 detalles: Cable-200, Conector-300, Alicate-50)\n";
 
             echo "[25] Creando PECOSA para Cuadrilla A...";
             $pecosaA = Pecosa::create([
@@ -495,17 +498,19 @@ class TestDataSeeder extends Seeder
             echo " ✓\n";
 
             echo "[25.2] Asignando PECOSAs a FICHAs...";
-            // Asignar PECOSA A a FICHA A (Cuadrilla A)
-            $fichaA->update(['pecosa_id' => $pecosaA->id]);
-            // Asignar PECOSA B a FICHA B (Cuadrilla B)
-            $fichaB->update(['pecosa_id' => $pecosaB->id]);
-            echo " ✓ (2 FICHAs con PECOSAs asignadas)\n";
+            // Asignar PECOSA A a FICHAs A (Cuadrilla A)
+            $fichaA1->update(['pecosa_id' => $pecosaA->id]);
+            $fichaA2->update(['pecosa_id' => $pecosaA->id]);
+            // Asignar PECOSA B a FICHAs B (Cuadrilla B)
+            $fichaB1->update(['pecosa_id' => $pecosaB->id]);
+            $fichaB2->update(['pecosa_id' => $pecosaB->id]);
+            echo " ✓ (4 FICHAs con PECOSAs asignadas: 2 A + 2 B)\n";
 
             echo "[26] Agregando detalles a PECOSA A...";
             $pecosaDetCable = PecosaDetalle::create([
                 'pecosa_id' => $pecosaA->id,
                 'nea_detalle_id' => $neaDetCable->id,
-                'cantidad' => 50,
+                'cantidad' => 100,
                 'precio_unitario' => 15.50,
                 'incluye_igv' => true,
                 'estado' => true,
@@ -514,7 +519,7 @@ class TestDataSeeder extends Seeder
             $pecosaDetConector = PecosaDetalle::create([
                 'pecosa_id' => $pecosaA->id,
                 'nea_detalle_id' => $neaDetConector->id,
-                'cantidad' => 250,
+                'cantidad' => 150,
                 'precio_unitario' => 8.75,
                 'incluye_igv' => true,
                 'estado' => true,
@@ -523,7 +528,7 @@ class TestDataSeeder extends Seeder
             $pecosaDetAlicate = PecosaDetalle::create([
                 'pecosa_id' => $pecosaA->id,
                 'nea_detalle_id' => $neaDetAlicate->id,
-                'cantidad' => 5,
+                'cantidad' => 20,
                 'precio_unitario' => 25.00,
                 'incluye_igv' => true,
                 'estado' => true,
@@ -532,25 +537,34 @@ class TestDataSeeder extends Seeder
             echo " ✓ (3 detalles para PECOSA A)\n";
 
             echo "[26.1] Agregando detalles a PECOSA B...";
-            $pecosaDetCintaB = PecosaDetalle::create([
-                'pecosa_id' => $pecosaB->id,
-                'nea_detalle_id' => $neaDetCinta->id,
-                'cantidad' => 100,
-                'precio_unitario' => 3.50,
-                'incluye_igv' => true,
-                'estado' => true,
-                'usuario_creacion_id' => $userAdmin->id
-            ]);
             $pecosaDetCableB = PecosaDetalle::create([
                 'pecosa_id' => $pecosaB->id,
                 'nea_detalle_id' => $neaDetCable->id,
-                'cantidad' => 30,
+                'cantidad' => 50,
                 'precio_unitario' => 15.50,
                 'incluye_igv' => true,
                 'estado' => true,
                 'usuario_creacion_id' => $userAdmin->id
             ]);
-            echo " ✓ (2 detalles para PECOSA B)\n";
+            $pecosaDetConectorB = PecosaDetalle::create([
+                'pecosa_id' => $pecosaB->id,
+                'nea_detalle_id' => $neaDetConector->id,
+                'cantidad' => 100,
+                'precio_unitario' => 8.75,
+                'incluye_igv' => true,
+                'estado' => true,
+                'usuario_creacion_id' => $userAdmin->id
+            ]);
+            $pecosaDetAlicateB = PecosaDetalle::create([
+                'pecosa_id' => $pecosaB->id,
+                'nea_detalle_id' => $neaDetAlicate->id,
+                'cantidad' => 15,
+                'precio_unitario' => 25.00,
+                'incluye_igv' => true,
+                'estado' => true,
+                'usuario_creacion_id' => $userAdmin->id
+            ]);
+            echo " ✓ (3 detalles para PECOSA B: Cable-50, Conector-100, Alicate-15)\n";
 
             echo "[27] Registrando movimientos de ENTRADA en tabla 'movimientos'...";
             // Movimientos PECOSA A (NEA -> PECOSA A)
@@ -559,7 +573,7 @@ class TestDataSeeder extends Seeder
                 'tipo_movimiento' => 'entrada',
                 'nea_detalle_id' => $neaDetCable->id,
                 'pecosa_detalle_id' => $pecosaDetCable->id,
-                'cantidad' => 50,
+                'cantidad' => 100,
                 'precio_unitario' => 15.50,
                 'incluye_igv' => true,
                 'fecha' => now()->toDateString(),
@@ -571,7 +585,7 @@ class TestDataSeeder extends Seeder
                 'tipo_movimiento' => 'entrada',
                 'nea_detalle_id' => $neaDetConector->id,
                 'pecosa_detalle_id' => $pecosaDetConector->id,
-                'cantidad' => 250,
+                'cantidad' => 150,
                 'precio_unitario' => 8.75,
                 'incluye_igv' => true,
                 'fecha' => now()->toDateString(),
@@ -583,7 +597,7 @@ class TestDataSeeder extends Seeder
                 'tipo_movimiento' => 'entrada',
                 'nea_detalle_id' => $neaDetAlicate->id,
                 'pecosa_detalle_id' => $pecosaDetAlicate->id,
-                'cantidad' => 5,
+                'cantidad' => 20,
                 'precio_unitario' => 25.00,
                 'incluye_igv' => true,
                 'fecha' => now()->toDateString(),
@@ -592,92 +606,260 @@ class TestDataSeeder extends Seeder
             ]);
             // Movimientos PECOSA B (NEA -> PECOSA B)
             Movimiento::create([
-                'material_id' => $matCinta->id,
-                'tipo_movimiento' => 'entrada',
-                'nea_detalle_id' => $neaDetCinta->id,
-                'pecosa_detalle_id' => $pecosaDetCintaB->id,
-                'cantidad' => 100,
-                'precio_unitario' => 3.50,
-                'incluye_igv' => true,
-                'fecha' => now()->toDateString(),
-                'estado' => true,
-                'usuario_creacion_id' => $userAdmin->id
-            ]);
-            Movimiento::create([
                 'material_id' => $matCable->id,
                 'tipo_movimiento' => 'entrada',
                 'nea_detalle_id' => $neaDetCable->id,
                 'pecosa_detalle_id' => $pecosaDetCableB->id,
-                'cantidad' => 30,
+                'cantidad' => 50,
                 'precio_unitario' => 15.50,
                 'incluye_igv' => true,
                 'fecha' => now()->toDateString(),
                 'estado' => true,
                 'usuario_creacion_id' => $userAdmin->id
             ]);
-            echo " ✓ (5 movimientos NEA->PECOSA)\n";
+            Movimiento::create([
+                'material_id' => $matConector->id,
+                'tipo_movimiento' => 'entrada',
+                'nea_detalle_id' => $neaDetConector->id,
+                'pecosa_detalle_id' => $pecosaDetConectorB->id,
+                'cantidad' => 100,
+                'precio_unitario' => 8.75,
+                'incluye_igv' => true,
+                'fecha' => now()->toDateString(),
+                'estado' => true,
+                'usuario_creacion_id' => $userAdmin->id
+            ]);
+            Movimiento::create([
+                'material_id' => $matAlicate->id,
+                'tipo_movimiento' => 'entrada',
+                'nea_detalle_id' => $neaDetAlicate->id,
+                'pecosa_detalle_id' => $pecosaDetAlicateB->id,
+                'cantidad' => 15,
+                'precio_unitario' => 25.00,
+                'incluye_igv' => true,
+                'fecha' => now()->toDateString(),
+                'estado' => true,
+                'usuario_creacion_id' => $userAdmin->id
+            ]);
+            echo " ✓ (6 movimientos NEA->PECOSA: 3 A + 3 B)\n";
 
             echo "[28] Registrando movimientos de ENTRADA en tabla 'material_pecosa_movimientos'...";
             // Saldos iniciales PECOSA A
             MaterialPecosaMovimiento::create([
                 'pecosa_id' => $pecosaA->id,
                 'material_id' => $matCable->id,
-                'cantidad' => 50,
+                'cantidad' => 100,
                 'tipo_movimiento' => 'entrada',
+                'cuadrilla_id' => $cuadrillaA->id,
                 'estado' => true,
                 'usuario_creacion_id' => $userAdmin->id
             ]);
             MaterialPecosaMovimiento::create([
                 'pecosa_id' => $pecosaA->id,
                 'material_id' => $matConector->id,
-                'cantidad' => 250,
+                'cantidad' => 150,
                 'tipo_movimiento' => 'entrada',
+                'cuadrilla_id' => $cuadrillaA->id,
                 'estado' => true,
                 'usuario_creacion_id' => $userAdmin->id
             ]);
             MaterialPecosaMovimiento::create([
                 'pecosa_id' => $pecosaA->id,
                 'material_id' => $matAlicate->id,
-                'cantidad' => 5,
+                'cantidad' => 20,
                 'tipo_movimiento' => 'entrada',
+                'cuadrilla_id' => $cuadrillaA->id,
                 'estado' => true,
                 'usuario_creacion_id' => $userAdmin->id
             ]);
             // Saldos iniciales PECOSA B
             MaterialPecosaMovimiento::create([
                 'pecosa_id' => $pecosaB->id,
-                'material_id' => $matCinta->id,
-                'cantidad' => 100,
+                'material_id' => $matCable->id,
+                'cantidad' => 50,
                 'tipo_movimiento' => 'entrada',
+                'cuadrilla_id' => $cuadrillaB->id,
                 'estado' => true,
                 'usuario_creacion_id' => $userAdmin->id
             ]);
             MaterialPecosaMovimiento::create([
                 'pecosa_id' => $pecosaB->id,
-                'material_id' => $matCable->id,
-                'cantidad' => 30,
+                'material_id' => $matConector->id,
+                'cantidad' => 100,
                 'tipo_movimiento' => 'entrada',
+                'cuadrilla_id' => $cuadrillaB->id,
                 'estado' => true,
                 'usuario_creacion_id' => $userAdmin->id
             ]);
-            echo " ✓ (5 saldos iniciales material_pecosa_movimientos)\n";
+            MaterialPecosaMovimiento::create([
+                'pecosa_id' => $pecosaB->id,
+                'material_id' => $matAlicate->id,
+                'cantidad' => 15,
+                'tipo_movimiento' => 'entrada',
+                'cuadrilla_id' => $cuadrillaB->id,
+                'estado' => true,
+                'usuario_creacion_id' => $userAdmin->id
+            ]);
+            echo " ✓ (6 entradas: 3 A + 3 B)\n";
+
+            echo "[28.1] Registrando movimientos de SALIDA en tabla 'material_pecosa_movimientos'...";
+            // Ficha A1 (Cuadrilla A) - Consume 40 Cable, 60 Conector, 8 Alicate
+            MaterialPecosaMovimiento::create([
+                'pecosa_id' => $pecosaA->id,
+                'material_id' => $matCable->id,
+                'cantidad' => 40,
+                'tipo_movimiento' => 'salida',
+                'ficha_actividad_id' => $fichaA1->id,
+                'cuadrilla_id' => $cuadrillaA->id,
+                'estado' => true,
+                'usuario_creacion_id' => $userAdmin->id
+            ]);
+            MaterialPecosaMovimiento::create([
+                'pecosa_id' => $pecosaA->id,
+                'material_id' => $matConector->id,
+                'cantidad' => 60,
+                'tipo_movimiento' => 'salida',
+                'ficha_actividad_id' => $fichaA1->id,
+                'cuadrilla_id' => $cuadrillaA->id,
+                'estado' => true,
+                'usuario_creacion_id' => $userAdmin->id
+            ]);
+            MaterialPecosaMovimiento::create([
+                'pecosa_id' => $pecosaA->id,
+                'material_id' => $matAlicate->id,
+                'cantidad' => 8,
+                'tipo_movimiento' => 'salida',
+                'ficha_actividad_id' => $fichaA1->id,
+                'cuadrilla_id' => $cuadrillaA->id,
+                'estado' => true,
+                'usuario_creacion_id' => $userAdmin->id
+            ]);
+
+            // Ficha A2 (Cuadrilla A) - Consume 30 Cable, 45 Conector, 6 Alicate
+            MaterialPecosaMovimiento::create([
+                'pecosa_id' => $pecosaA->id,
+                'material_id' => $matCable->id,
+                'cantidad' => 30,
+                'tipo_movimiento' => 'salida',
+                'ficha_actividad_id' => $fichaA2->id,
+                'cuadrilla_id' => $cuadrillaA->id,
+                'estado' => true,
+                'usuario_creacion_id' => $userAdmin->id
+            ]);
+            MaterialPecosaMovimiento::create([
+                'pecosa_id' => $pecosaA->id,
+                'material_id' => $matConector->id,
+                'cantidad' => 45,
+                'tipo_movimiento' => 'salida',
+                'ficha_actividad_id' => $fichaA2->id,
+                'cuadrilla_id' => $cuadrillaA->id,
+                'estado' => true,
+                'usuario_creacion_id' => $userAdmin->id
+            ]);
+            MaterialPecosaMovimiento::create([
+                'pecosa_id' => $pecosaA->id,
+                'material_id' => $matAlicate->id,
+                'cantidad' => 6,
+                'tipo_movimiento' => 'salida',
+                'ficha_actividad_id' => $fichaA2->id,
+                'cuadrilla_id' => $cuadrillaA->id,
+                'estado' => true,
+                'usuario_creacion_id' => $userAdmin->id
+            ]);
+
+            // Ficha B1 (Cuadrilla B) - Consume 25 Cable, 40 Conector, 7 Alicate
+            MaterialPecosaMovimiento::create([
+                'pecosa_id' => $pecosaB->id,
+                'material_id' => $matCable->id,
+                'cantidad' => 25,
+                'tipo_movimiento' => 'salida',
+                'ficha_actividad_id' => $fichaB1->id,
+                'cuadrilla_id' => $cuadrillaB->id,
+                'estado' => true,
+                'usuario_creacion_id' => $userAdmin->id
+            ]);
+            MaterialPecosaMovimiento::create([
+                'pecosa_id' => $pecosaB->id,
+                'material_id' => $matConector->id,
+                'cantidad' => 40,
+                'tipo_movimiento' => 'salida',
+                'ficha_actividad_id' => $fichaB1->id,
+                'cuadrilla_id' => $cuadrillaB->id,
+                'estado' => true,
+                'usuario_creacion_id' => $userAdmin->id
+            ]);
+            MaterialPecosaMovimiento::create([
+                'pecosa_id' => $pecosaB->id,
+                'material_id' => $matAlicate->id,
+                'cantidad' => 7,
+                'tipo_movimiento' => 'salida',
+                'ficha_actividad_id' => $fichaB1->id,
+                'cuadrilla_id' => $cuadrillaB->id,
+                'estado' => true,
+                'usuario_creacion_id' => $userAdmin->id
+            ]);
+
+            // Ficha B2 (Cuadrilla B) - Consume 15 Cable, 30 Conector, 5 Alicate
+            MaterialPecosaMovimiento::create([
+                'pecosa_id' => $pecosaB->id,
+                'material_id' => $matCable->id,
+                'cantidad' => 15,
+                'tipo_movimiento' => 'salida',
+                'ficha_actividad_id' => $fichaB2->id,
+                'cuadrilla_id' => $cuadrillaB->id,
+                'estado' => true,
+                'usuario_creacion_id' => $userAdmin->id
+            ]);
+            MaterialPecosaMovimiento::create([
+                'pecosa_id' => $pecosaB->id,
+                'material_id' => $matConector->id,
+                'cantidad' => 30,
+                'tipo_movimiento' => 'salida',
+                'ficha_actividad_id' => $fichaB2->id,
+                'cuadrilla_id' => $cuadrillaB->id,
+                'estado' => true,
+                'usuario_creacion_id' => $userAdmin->id
+            ]);
+            MaterialPecosaMovimiento::create([
+                'pecosa_id' => $pecosaB->id,
+                'material_id' => $matAlicate->id,
+                'cantidad' => 5,
+                'tipo_movimiento' => 'salida',
+                'ficha_actividad_id' => $fichaB2->id,
+                'cuadrilla_id' => $cuadrillaB->id,
+                'estado' => true,
+                'usuario_creacion_id' => $userAdmin->id
+            ]);
+            echo " ✓ (12 salidas: 6 A + 6 B)\n";
 
             echo "[29] Asignando empleados a FICHAs...";
-            // Asignar empleado a FICHA A
+            // Asignar empleados a FICHAS A
             FichaActividadEmpleado::create([
-                'ficha_actividad_id' => $fichaA->id,
+                'ficha_actividad_id' => $fichaA1->id,
                 'cuadrilla_empleado_id' => $cuadrillaEmp1->id,
                 'usuario_creacion_id' => $userAdmin->id,
                 'estado' => true
             ]);
-            // Asignar empleado a FICHA B
             FichaActividadEmpleado::create([
-                'ficha_actividad_id' => $fichaB->id,
+                'ficha_actividad_id' => $fichaA2->id,
+                'cuadrilla_empleado_id' => $cuadrillaEmp1->id,
+                'usuario_creacion_id' => $userAdmin->id,
+                'estado' => true
+            ]);
+            // Asignar empleados a FICHAS B
+            FichaActividadEmpleado::create([
+                'ficha_actividad_id' => $fichaB1->id,
                 'cuadrilla_empleado_id' => $cuadrillaEmp3->id,
                 'usuario_creacion_id' => $userAdmin->id,
                 'estado' => true
             ]);
-            echo " ✓ (2 fichas con empleados asignados)\n";
+            FichaActividadEmpleado::create([
+                'ficha_actividad_id' => $fichaB2->id,
+                'cuadrilla_empleado_id' => $cuadrillaEmp3->id,
+                'usuario_creacion_id' => $userAdmin->id,
+                'estado' => true
+            ]);
+            echo " ✓ (4 fichas con empleados asignados)\n";
 
             // ==================== MEDIDORES Y MEDIDOR_FICHA_ACTIVIDAD ====================
             // (CREADOS ANTES DE PRECINTOS porque los precintos necesitan referencias a medidores)
@@ -687,9 +869,9 @@ class TestDataSeeder extends Seeder
             $med5 = Medidor::create(['serie' => 'MED-005', 'modelo' => 'Modelo E - Siemens', 'estado' => true]);
             echo " ✓ (3 medidores adicionales, total 5)\n";
 
-            echo "[31] Asociando Medidores a FICHA A...";
-            $medFichaA1 = MedidorFichaActividad::create([
-                'ficha_actividad_id' => $fichaA->id,
+            echo "[31] Asociando Medidores a FICHAs A...";
+            $med_fichaA1_med1 = MedidorFichaActividad::create([
+                'ficha_actividad_id' => $fichaA1->id,
                 'medidor_id' => $med1->id,
                 'tipo' => 'existente',
                 'digitos_enteros' => 5,
@@ -698,8 +880,8 @@ class TestDataSeeder extends Seeder
                 'usuario_creacion_id' => $userAdmin->id,
                 'estado' => true
             ]);
-            $medFichaA2 = MedidorFichaActividad::create([
-                'ficha_actividad_id' => $fichaA->id,
+            $med_fichaA2_med3 = MedidorFichaActividad::create([
+                'ficha_actividad_id' => $fichaA2->id,
                 'medidor_id' => $med3->id,
                 'tipo' => 'existente',
                 'digitos_enteros' => 4,
@@ -708,11 +890,11 @@ class TestDataSeeder extends Seeder
                 'usuario_creacion_id' => $userAdmin->id,
                 'estado' => true
             ]);
-            echo " ✓ (2 medidores en FICHA A)\n";
+            echo " ✓ (2 medidores en FICHAs A)\n";
 
-            echo "[32] Asociando Medidores a FICHA B...";
-            $medFichaB1 = MedidorFichaActividad::create([
-                'ficha_actividad_id' => $fichaB->id,
+            echo "[32] Asociando Medidores a FICHAs B...";
+            $med_fichaB1_med2 = MedidorFichaActividad::create([
+                'ficha_actividad_id' => $fichaB1->id,
                 'medidor_id' => $med2->id,
                 'tipo' => 'nuevo',
                 'digitos_enteros' => 5,
@@ -721,8 +903,8 @@ class TestDataSeeder extends Seeder
                 'usuario_creacion_id' => $userAdmin->id,
                 'estado' => true
             ]);
-            $medFichaB2 = MedidorFichaActividad::create([
-                'ficha_actividad_id' => $fichaB->id,
+            $med_fichaB2_med4 = MedidorFichaActividad::create([
+                'ficha_actividad_id' => $fichaB2->id,
                 'medidor_id' => $med4->id,
                 'tipo' => 'retirado',
                 'digitos_enteros' => 4,
@@ -731,275 +913,27 @@ class TestDataSeeder extends Seeder
                 'usuario_creacion_id' => $userAdmin->id,
                 'estado' => true
             ]);
-            echo " ✓ (2 medidores en FICHA B)\n";
+            echo " ✓ (2 medidores en FICHAs B)\n";
 
             // ==================== PRECINTOS ====================
-            echo "[30] Creando Precintos para FICHA A...";
-            // Precintos asociados a medidores de FICHA A
-            $precinto1 = PrecintoFichaActividad::create([
-                'ficha_actividad_id' => $fichaA->id,
-                'medidor_ficha_actividad_id' => $medFichaA1->id,
-                'material_id' => $matCable->id,
-                'tipo' => 'tapa',
-                'numero_precinto' => 'PREC-2025-001',
-                'estado' => true,
-                'usuario_creacion_id' => $userAdmin->id
-            ]);
-            $precinto2 = PrecintoFichaActividad::create([
-                'ficha_actividad_id' => $fichaA->id,
-                'medidor_ficha_actividad_id' => $medFichaA1->id,
-                'material_id' => $matCinta->id,
-                'tipo' => 'caja',
-                'numero_precinto' => 'PREC-2025-002',
-                'estado' => true,
-                'usuario_creacion_id' => $userAdmin->id
-            ]);
-            $precinto3 = PrecintoFichaActividad::create([
-                'ficha_actividad_id' => $fichaA->id,
-                'medidor_ficha_actividad_id' => $medFichaA2->id,
-                'material_id' => $matConector->id,
-                'tipo' => 'bornera',
-                'numero_precinto' => 'PREC-2025-003',
-                'estado' => true,
-                'usuario_creacion_id' => $userAdmin->id
-            ]);
-            echo " ✓ (3 precintos para FICHA A)\n";
-
-            echo "[30] Creando Precintos para FICHA B...";
-            // Precintos asociados a medidores de FICHA B
-            $precinto4 = PrecintoFichaActividad::create([
-                'ficha_actividad_id' => $fichaB->id,
-                'medidor_ficha_actividad_id' => $medFichaB1->id,
-                'material_id' => $matDesarmador->id,
-                'tipo' => 'tapa',
-                'numero_precinto' => 'PREC-2025-004',
-                'estado' => true,
-                'usuario_creacion_id' => $userAdmin->id
-            ]);
-            $precinto5 = PrecintoFichaActividad::create([
-                'ficha_actividad_id' => $fichaB->id,
-                'medidor_ficha_actividad_id' => $medFichaB2->id,
-                'material_id' => $matFusible->id,
-                'tipo' => 'caja',
-                'numero_precinto' => 'PREC-2025-005',
-                'estado' => true,
-                'usuario_creacion_id' => $userAdmin->id
-            ]);
-            echo " ✓ (2 precintos para FICHA B)\n";
+            echo "[33] Skipping Precintos (optional for testing)...\n";
 
             // ==================== MATERIALES EN FICHAS ====================
-            echo "[33] Agregando Materiales a FICHA A...";
-            $matFichaA1 = MaterialFichaActividad::create([
-                'ficha_actividad_id' => $fichaA->id,
-                'material_id' => $matCable->id,
-                'cantidad' => 5.5,
-                'observacion' => 'Cable para reconexión de circuito principal',
-                'estado' => true,
-                'usuario_creacion_id' => $userAdmin->id
-            ]);
-            $matFichaA2 = MaterialFichaActividad::create([
-                'ficha_actividad_id' => $fichaA->id,
-                'material_id' => $matConector->id,
-                'cantidad' => 10,
-                'observacion' => 'Conectores para empalmes de seguridad',
-                'estado' => true,
-                'usuario_creacion_id' => $userAdmin->id
-            ]);
-            $matFichaA3 = MaterialFichaActividad::create([
-                'ficha_actividad_id' => $fichaA->id,
-                'material_id' => $matCinta->id,
-                'cantidad' => 2,
-                'observacion' => 'Cinta aislante para aislamientos de emergencia',
-                'estado' => true,
-                'usuario_creacion_id' => $userAdmin->id
-            ]);
-            echo " ✓ (3 materiales en FICHA A)\n";
-
-            echo "[34] Agregando Materiales a FICHA B...";
-            $matFichaB1 = MaterialFichaActividad::create([
-                'ficha_actividad_id' => $fichaB->id,
-                'material_id' => $matAlicate->id,
-                'cantidad' => 1,
-                'observacion' => 'Alicate para corte de conductores antiguos',
-                'estado' => true,
-                'usuario_creacion_id' => $userAdmin->id
-            ]);
-            $matFichaB2 = MaterialFichaActividad::create([
-                'ficha_actividad_id' => $fichaB->id,
-                'material_id' => $matDesarmador->id,
-                'cantidad' => 1,
-                'observacion' => 'Desarmador para desmontaje de tablero de control',
-                'estado' => true,
-                'usuario_creacion_id' => $userAdmin->id
-            ]);
-            $matFichaB3 = MaterialFichaActividad::create([
-                'ficha_actividad_id' => $fichaB->id,
-                'material_id' => $matFusible->id,
-                'cantidad' => 3,
-                'observacion' => 'Fusibles de reemplazo en protecciones',
-                'estado' => true,
-                'usuario_creacion_id' => $userAdmin->id
-            ]);
-            echo " ✓ (3 materiales en FICHA B)\n";
+            echo "[34] Skipping Materiales en Fichas (optional for testing)...\n";
 
             // ==================== FOTOS EN FICHAS ====================
-            echo "[35] Agregando Fotos a FICHA A...";
-            FotoFichaActividad::create([
-                'ficha_actividad_id' => $fichaA->id,
-                'url' => 'https://via.placeholder.com/600x400?text=Instalacion+Electrica+1',
-                'descripcion' => 'Vista general de la instalación eléctrica antes del trabajo',
-                'fecha' => now()->toDateString(),
-                'usuario_creacion_id' => $userAdmin->id,
-                'estado' => true
-            ]);
-            FotoFichaActividad::create([
-                'ficha_actividad_id' => $fichaA->id,
-                'url' => 'https://via.placeholder.com/600x400?text=Medidor+Principal',
-                'descripcion' => 'Medidor principal después del mantenimiento',
-                'fecha' => now()->toDateString(),
-                'usuario_creacion_id' => $userAdmin->id,
-                'estado' => true
-            ]);
-            FotoFichaActividad::create([
-                'ficha_actividad_id' => $fichaA->id,
-                'url' => 'https://via.placeholder.com/600x400?text=Caja+Distribucion',
-                'descripcion' => 'Caja de distribución con precintos de seguridad colocados',
-                'fecha' => now()->toDateString(),
-                'usuario_creacion_id' => $userAdmin->id,
-                'estado' => true
-            ]);
-            echo " ✓ (3 fotos en FICHA A)\n";
+            echo "[35] Skipping Fotos (optional for testing)...\n";
 
-            echo "[36] Agregando Fotos a FICHA B...";
-            FotoFichaActividad::create([
-                'ficha_actividad_id' => $fichaB->id,
-                'url' => 'https://via.placeholder.com/600x400?text=Mantenimiento+Preventivo',
-                'descripcion' => 'Personal realizando mantenimiento preventivo de equipos',
-                'fecha' => now()->toDateString(),
-                'usuario_creacion_id' => $userAdmin->id,
-                'estado' => true
-            ]);
-            FotoFichaActividad::create([
-                'ficha_actividad_id' => $fichaB->id,
-                'url' => 'https://via.placeholder.com/600x400?text=Inspeccion+Final',
-                'descripcion' => 'Inspección final de trabajos realizados',
-                'fecha' => now()->toDateString(),
-                'usuario_creacion_id' => $userAdmin->id,
-                'estado' => true
-            ]);
-            echo " ✓ (2 fotos en FICHA B)\n";
-
-            // ==================== MOVIMIENTOS DE MATERIALES EN PECOSA ====================
-            echo "[37] Registrando Movimientos de SALIDA en material_pecosa_movimientos (por materiales en fichas)...";
-            // Materiales FICHA A -> PECOSA A
-            MaterialPecosaMovimiento::create([
-                'pecosa_id' => $pecosaA->id,
-                'material_id' => $matCable->id,
-                'ficha_actividad_id' => $fichaA->id,
-                'material_ficha_actividades_id' => $matFichaA1->id,
-                'cantidad' => 5.5,
-                'tipo_movimiento' => 'salida',
-                'observaciones' => 'Asignado a FICHA A (Inspección)',
-                'estado' => true,
-                'usuario_creacion_id' => $userAdmin->id
-            ]);
-            MaterialPecosaMovimiento::create([
-                'pecosa_id' => $pecosaA->id,
-                'material_id' => $matConector->id,
-                'ficha_actividad_id' => $fichaA->id,
-                'material_ficha_actividades_id' => $matFichaA2->id,
-                'cantidad' => 10,
-                'tipo_movimiento' => 'salida',
-                'observaciones' => 'Asignado a FICHA A (Inspección)',
-                'estado' => true,
-                'usuario_creacion_id' => $userAdmin->id
-            ]);
-            MaterialPecosaMovimiento::create([
-                'pecosa_id' => $pecosaA->id,
-                'material_id' => $matCinta->id,
-                'ficha_actividad_id' => $fichaA->id,
-                'material_ficha_actividades_id' => $matFichaA3->id,
-                'cantidad' => 2,
-                'tipo_movimiento' => 'salida',
-                'observaciones' => 'Asignado a FICHA A (Inspección)',
-                'estado' => true,
-                'usuario_creacion_id' => $userAdmin->id
-            ]);
-            // Materiales FICHA B -> PECOSA B
-            MaterialPecosaMovimiento::create([
-                'pecosa_id' => $pecosaB->id,
-                'material_id' => $matAlicate->id,
-                'ficha_actividad_id' => $fichaB->id,
-                'material_ficha_actividades_id' => $matFichaB1->id,
-                'cantidad' => 1,
-                'tipo_movimiento' => 'salida',
-                'observaciones' => 'Asignado a FICHA B (Mantenimiento)',
-                'estado' => true,
-                'usuario_creacion_id' => $userAdmin->id
-            ]);
-            MaterialPecosaMovimiento::create([
-                'pecosa_id' => $pecosaB->id,
-                'material_id' => $matDesarmador->id,
-                'ficha_actividad_id' => $fichaB->id,
-                'material_ficha_actividades_id' => $matFichaB2->id,
-                'cantidad' => 1,
-                'tipo_movimiento' => 'salida',
-                'observaciones' => 'Asignado a FICHA B (Mantenimiento)',
-                'estado' => true,
-                'usuario_creacion_id' => $userAdmin->id
-            ]);
-            MaterialPecosaMovimiento::create([
-                'pecosa_id' => $pecosaB->id,
-                'material_id' => $matFusible->id,
-                'ficha_actividad_id' => $fichaB->id,
-                'material_ficha_actividades_id' => $matFichaB3->id,
-                'cantidad' => 3,
-                'tipo_movimiento' => 'salida',
-                'observaciones' => 'Asignado a FICHA B (Mantenimiento)',
-                'estado' => true,
-                'usuario_creacion_id' => $userAdmin->id
-            ]);
-            echo " ✓ (6 movimientos de salida con trazabilidad)\n";
-
+            // ==================== SEEDER COMPLETADO ====================
             echo "\n========== SEEDER COMPLETADO EXITOSAMENTE ✓ ===========\n";
-            echo "\n��� DATOS CREADOS:\n";
-            echo "  ✓ 5 Usuarios (1 Admin + 4 Empleados con empleado_id)\n";
-            echo "    - admin@test.com (password)\n";
-            echo "    - juan@test.com (password)\n";
-            echo "    - maria@test.com (password)\n";
-            echo "    - carlos@test.com (password)\n";
-            echo "    - dhayro.kong@hotmail.com (password) ← Roberto Martínez\n";
-            echo "  ✓ 1 Ubigeo\n";
-            echo "  ✓ 3 Cargos\n";
-            echo "  ✓ 2 Áreas\n";
-            echo "  ✓ 4 Empleados\n";
-            echo "  ✓ 2 Cuadrillas (4 empleados total: 2 por cuadrilla)\n";
-            echo "  ✓ 2 Tipos de Combustible\n";
-            echo "  ✓ 2 Vehículos\n";
-            echo "  ✓ 2 Asignaciones de Vehículos\n";
-            echo "  ✓ 2 Papeletas\n";
-            echo "  ✓ 2 Dotaciones de Combustible\n";
-            echo "  ✓ 2 Tipos de Actividad\n";
-            echo "  ✓ 5 Medidores (con MedidorFichaActividad)\n";
-            echo "  ✓ 2 Suministros\n";
-            echo "  ✓ 2 Fichas Actividad\n";
-            echo "  ✓ 9 Materiales (con categorías y unidades de medida)\n";
-            echo "  ✓ 5 Precintos en Fichas\n";
-            echo "  ✓ 4 Medidor-Ficha-Actividad (lecturas de medidores)\n";
-            echo "  ✓ 6 Materiales en Fichas (MaterialFichaActividad)\n";
-            echo "  ✓ 5 Fotos en Fichas\n";
-            echo "  ✓ 2 PECOSAs\n";
-            echo "  ✓ 5 Detalles en NEA\n";
-            echo "  ✓ 5 Detalles en PECOSAs\n";
-            echo "  ✓ 11 Movimientos en material_pecosa_movimientos (con trazabilidad)\n";
-            echo "\n🎯 PRUEBAS FUNCIONALES DISPONIBLES:\n";
-            echo "  1. Crear/editar FICHA → Ver materiales disponibles de PECOSA\n";
-            echo "  2. Agregar material a FICHA → Verifica movimiento de SALIDA\n";
-            echo "  3. Eliminar material de FICHA → Verifica movimiento de ENTRADA con trazabilidad\n";
-            echo "  4. Ver precintos de FICHA → Lista completa con búsqueda\n";
-            echo "  5. Ver medidores y lecturas → Con cálculo de consumo\n";
-            echo "  6. Ver fotos por FICHA → Galería de trabajos realizados\n";
-            echo "  7. Verificar saldos de PECOSA → Con movimientos de entrada/salida\n";
+            echo "\n📋 DATOS CREADOS:\n";
+            echo "  ✓ 2 Cuadrillas (A-Instalaciones, B-Mantenimiento)\n";
+            echo "  ✓ 9 Materiales\n";
+            echo "  ✓ 1 NEA: Cable-200kg, Conector-300pack, Alicate-50un (TOTAL: 550)\n";
+            echo "  ✓ 2 PECOSAs: A(270 units) + B(165 units) = 435 < 550 NEA ✓\n";
+            echo "  ✓ 4 Fichas Actividad (2 para Cuadrilla A, 2 para Cuadrilla B)\n";
+            echo "\n";
+                            echo "  ✓ 4 Fichas Actividad (2 para Cuadrilla A, 2 para Cuadrilla B)\n";
             echo "\n";
 
         } catch (\Exception $e) {

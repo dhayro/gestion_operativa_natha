@@ -70,6 +70,12 @@ class Cuadrilla extends Model
         return $this->hasMany(AsignacionVehiculo::class);
     }
 
+    // Relación con movimientos de materiales pecosa
+    public function materialesPecosaMovimientos()
+    {
+        return $this->hasMany(MaterialPecosaMovimiento::class);
+    }
+
     // Scope para cuadrillas activas
     public function scopeActivas($query)
     {

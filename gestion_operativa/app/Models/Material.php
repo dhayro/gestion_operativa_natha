@@ -34,4 +34,9 @@ class Material extends Model
     {
         return $this->hasMany(NeaDetalle::class, 'material_id');
     }
+
+    public function materialPecosaMovimientos()
+    {
+        return $this->hasMany(MaterialPecosaMovimiento::class, 'material_id');
+    }
 }

@@ -573,24 +573,61 @@
             </div>
             <form id="fotoForm">
                 <div class="modal-body">
+                    <!-- Selector de tipo de origen -->
                     <div class="mb-3">
-                        <label for="foto_url" class="form-label">URL de la Foto <span class="text-danger">*</span></label>
-                        <input type="url" class="form-control" id="foto_url" placeholder="https://..." required>
-                        <small class="form-text text-muted">Enlace completo de la imagen (ej: de CloudStorage, Imgur, etc)</small>
+                        <label class="form-label">Tipo de Foto <span class="text-danger">*</span></label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="tipo_origen" id="tipo_url" value="url" checked>
+                            <label class="btn btn-outline-primary" for="tipo_url">
+                                🌐 URL Externa
+                            </label>
+
+                            <input type="radio" class="btn-check" name="tipo_origen" id="tipo_archivo" value="archivo">
+                            <label class="btn btn-outline-primary" for="tipo_archivo">
+                                📁 Archivo Local
+                            </label>
+                        </div>
                     </div>
 
+                    <!-- Entrada URL (mostrar solo cuando tipo_origen == 'url') -->
+                    <div id="urlInput" class="mb-3">
+                        <label for="foto_url" class="form-label">URL de la Foto <span class="text-danger">*</span></label>
+                        <input type="url" class="form-control" id="foto_url" placeholder="https://..." required>
+                        <small class="form-text text-muted">Enlace completo de la imagen (ej: de CloudStorage, Imgur, Google Drive, etc)</small>
+                    </div>
+
+                    <!-- Entrada de Archivo (mostrar solo cuando tipo_origen == 'archivo') -->
+                    <div id="archivoInput" class="mb-3" style="display:none;">
+                        <label for="foto_archivo" class="form-label">Seleccionar Archivo <span class="text-danger">*</span></label>
+                        <input type="file" class="form-control" id="foto_archivo" accept="image/jpeg,image/png,image/gif,image/webp">
+                        <small class="form-text text-muted">Formatos permitidos: JPG, PNG, GIF, WebP | Máximo: 30 MB</small>
+                        <div id="preview" class="mt-3"></div>
+                    </div>
+
+                    <!-- Descripción común -->
                     <div class="mb-3">
                         <label for="foto_descripcion" class="form-label">Descripción</label>
                         <textarea class="form-control" id="foto_descripcion" rows="3" placeholder="Describe el contenido de la foto..."></textarea>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-3" id="infoUrl">
                         <div class="alert alert-info">
-                            <strong>💡 Tips para subir fotos:</strong>
+                            <strong>💡 Tips para subir fotos por URL:</strong>
                             <ul class="mb-0">
                                 <li>Puedes usar servicios gratuitos como <strong>imgur.com</strong> o <strong>photobucket.com</strong></li>
                                 <li>Sube la foto y copia el enlace aquí</li>
                                 <li>También puedes usar URL de Google Drive (compartida públicamente)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="mb-3" id="infoArchivo" style="display:none;">
+                        <div class="alert alert-info">
+                            <strong>💡 Tips para subir archivos locales:</strong>
+                            <ul class="mb-0">
+                                <li>El archivo se guardará en el servidor</li>
+                                <li>Máximo 30 MB por foto</li>
+                                <li>Soporta JPG, PNG, GIF y WebP</li>
                             </ul>
                         </div>
                     </div>
@@ -609,7 +646,7 @@
 @section('scripts')
 <script src="{{asset('plugins/src/table/datatable/datatables.js')}}"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBBx6-6asBthkJUP0RJwfEhEi9ug9z4bCg&libraries=places"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBBx6-6asBthkJUP0RJwfEhEi9ug9z4bCg&libraries=places" async defer></script>
 
 <script>
     const PUCALLPA_CENTER = { lat: -8.3789, lng: -74.5234 };
@@ -1279,16 +1316,31 @@
         $.get(`/fichas-actividad/${fichaId}/detalles/fotos`, function(response) {
             let html = '';
             if (response.data.length === 0) {
-                html = '<div class="empty-state"><p>No hay fotos</p></div>';
+                html = '<div class="empty-state"><p class="text-muted">No hay fotos agregadas</p></div>';
             } else {
                 html = '<div class="row">';
                 $.each(response.data, function(i, item) {
+                    // Determinar el icono según el tipo de origen
+                    const tipoIcon = item.tipo_origen === 'url' ? '🌐' : '📁';
+                    const tipoLabel = item.tipo_origen === 'url' ? 'URL' : 'Archivo';
+                    
                     html += `<div class="col-md-4 mb-3">
-                        <div class="card">
-                            <img src="${item.url}" class="card-img-top img-thumbnail" style="height: 200px; object-fit: cover;">
+                        <div class="card h-100 shadow-sm">
+                            <div style="position: relative; overflow: hidden; height: 200px; background: #f5f5f5;">
+                                <img src="${item.foto_url}" class="card-img-top" style="width: 100%; height: 100%; object-fit: cover;" alt="Foto" onerror="this.src='/images/placeholder.png'; this.style.opacity='0.7';" loading="lazy">
+                                <span class="badge badge-info" style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6);">${tipoIcon} ${tipoLabel}</span>
+                            </div>
                             <div class="card-body">
-                                <p class="card-text">${item.descripcion || '-'}</p>
-                                <button class="btn btn-sm btn-danger" onclick="eliminarFoto(${fichaId}, ${item.id})">Eliminar</button>
+                                <p class="card-text" style="min-height: 40px; font-size: 0.9rem;">${item.descripcion || '<em class="text-muted">Sin descripción</em>'}</p>
+                                <div class="text-muted small mb-2">
+                                    <div>👤 ${item.usuario_creacion?.nombre || 'Desconocido'}</div>
+                                    <div>📅 ${item.fecha_formateada || '-'}</div>
+                                    ${item.tipo_origen === 'archivo' ? `<div>💾 ${item.tamaño_formateado}</div>` : ''}
+                                </div>
+                                <div class="btn-group btn-group-sm w-100" role="group">
+                                    <button class="btn btn-outline-primary btn-sm flex-fill" onclick="editarFoto(${fichaId}, ${item.id})" title="Editar">✏️ Editar</button>
+                                    <button class="btn btn-outline-danger btn-sm flex-fill" onclick="eliminarFoto(${fichaId}, ${item.id})" title="Eliminar">🗑️ Eliminar</button>
+                                </div>
                             </div>
                         </div>
                     </div>`;
@@ -1343,6 +1395,32 @@
             Swal.fire('Aviso', 'Primero guarda la ficha principal', 'warning');
             return;
         }
+
+        // Resetear el formulario a valores por defecto
+        $('#fotoForm')[0].reset();
+        
+        // Resetear radio button a URL
+        document.querySelector('input[name="tipo_origen"][value="url"]').checked = true;
+        
+        // Mostrar solo URL input
+        document.getElementById('urlInput').style.display = 'block';
+        document.getElementById('archivoInput').style.display = 'none';
+        document.getElementById('infoUrl').style.display = 'block';
+        document.getElementById('infoArchivo').style.display = 'none';
+        document.getElementById('preview').innerHTML = '';
+        
+        // Resetear botón a estado inicial
+        const btnGuardar = document.querySelector('button[onclick="guardarFoto()"]');
+        btnGuardar.innerHTML = '➕ Agregar Foto';
+        btnGuardar.onclick = function() { guardarFoto(); };
+        btnGuardar.classList.remove('btn-secondary');
+        btnGuardar.classList.add('btn-primary');
+        
+        // Establecer required correcto
+        document.getElementById('foto_url').required = true;
+        document.getElementById('foto_archivo').required = false;
+        
+        // Mostrar modal
         $('#fotoModal').modal('show');
     }
 
@@ -1494,9 +1572,10 @@
             
             // PASO 2: Obtener PECOSA de TU cuadrilla
             $.get(`/pecosas/cuadrilla/${cuadrillaId}/pecosas`, function(pecosasResponse) {
-                console.log('📦 Tus PECOSAS:', pecosasResponse);
+                console.log('📦 Respuesta de materiales disponibles:', pecosasResponse);
                 
-                if (!pecosasResponse.success || !pecosasResponse.data || pecosasResponse.data.length === 0) {
+                // La respuesta contiene 'data' (materiales) y 'pecosas' (lista de pecosas)
+                if (!pecosasResponse.success || !pecosasResponse.pecosas || pecosasResponse.pecosas.length === 0) {
                     console.warn('⚠️ Tu cuadrilla NO tiene PECOSA asignada');
                     select.html('<option value="">-- Tu cuadrilla no tiene PECOSA asignada --</option>');
                     
@@ -1514,8 +1593,9 @@
                     return;
                 }
                 
-                const pecosaId = pecosasResponse.data[0].id;
+                const pecosaId = pecosasResponse.pecosas[0].id;
                 console.log('📦 Tu PECOSA seleccionada ID:', pecosaId);
+                console.log('📦 PECOSAs disponibles:', pecosasResponse.pecosas);
                 cargarMaterialesDePecosa(pecosaId);
             }).fail(function(err) {
                 console.error('❌ Error obteniendo pecosas:', err);
@@ -1881,24 +1961,93 @@
         $('#material_observacion').val('');
     }
 
+    // ===== GESTIÓN DE FOTO: Mostrar/ocultar inputs según tipo_origen =====
+    document.querySelectorAll('input[name="tipo_origen"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const tipoOrigen = this.value;
+            const urlInput = document.getElementById('urlInput');
+            const archivoInput = document.getElementById('archivoInput');
+            const infoUrl = document.getElementById('infoUrl');
+            const infoArchivo = document.getElementById('infoArchivo');
+
+            if (tipoOrigen === 'url') {
+                // Mostrar URL, ocultar archivo
+                urlInput.style.display = 'block';
+                archivoInput.style.display = 'none';
+                infoUrl.style.display = 'block';
+                infoArchivo.style.display = 'none';
+                
+                // Actualizar atributo required
+                document.getElementById('foto_url').required = true;
+                document.getElementById('foto_archivo').required = false;
+            } else {
+                // Mostrar archivo, ocultar URL
+                urlInput.style.display = 'none';
+                archivoInput.style.display = 'block';
+                infoUrl.style.display = 'none';
+                infoArchivo.style.display = 'block';
+                
+                // Actualizar atributo required
+                document.getElementById('foto_url').required = false;
+                document.getElementById('foto_archivo').required = true;
+            }
+        });
+    });
+
+    // ===== PREVIEW DE ARCHIVO AL SELECCIONAR =====
+    document.getElementById('foto_archivo')?.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                let preview = document.getElementById('preview');
+                preview.innerHTML = `<img src="${event.target.result}" alt="Preview" style="max-width: 200px; max-height: 200px; border-radius: 4px; margin-top: 10px;">`;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
     function guardarFoto() {
-        const url = $('#foto_url').val();
+        const tipoOrigen = document.querySelector('input[name="tipo_origen"]:checked').value;
         const descripcion = $('#foto_descripcion').val();
 
-        if (!url) {
-            Swal.fire('Error', 'Ingresa la URL de la foto', 'error');
-            return;
+        // Validar según el tipo
+        if (tipoOrigen === 'url') {
+            const url = $('#foto_url').val();
+            if (!url) {
+                Swal.fire('Error', 'Ingresa la URL de la foto', 'error');
+                return;
+            }
+            enviarFoto({ url, descripcion, tipo_origen: tipoOrigen });
+        } else {
+            const archivo = document.getElementById('foto_archivo').files[0];
+            if (!archivo) {
+                Swal.fire('Error', 'Selecciona un archivo de foto', 'error');
+                return;
+            }
+            // Validar tipo de archivo
+            if (!archivo.type.startsWith('image/')) {
+                Swal.fire('Error', 'El archivo debe ser una imagen (JPG, PNG, GIF, WebP)', 'error');
+                return;
+            }
+            // Validar tamaño (30MB = 30 * 1024 * 1024)
+            const MAX_SIZE = 30 * 1024 * 1024;
+            if (archivo.size > MAX_SIZE) {
+                const sizeInMB = Math.round(archivo.size / (1024 * 1024));
+                Swal.fire('Error', `La imagen no debe exceder 30MB. Archivo: ${sizeInMB}MB`, 'error');
+                return;
+            }
+            enviarFotoConArchivo(archivo, descripcion, tipoOrigen);
         }
+    }
 
+    function enviarFoto(data) {
         $.ajax({
             url: `/fichas-actividad/${fichaActualId}/detalles/fotos`,
             type: 'POST',
             headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
             contentType: 'application/json',
-            data: JSON.stringify({
-                url: url,
-                descripcion: descripcion || null
-            }),
+            data: JSON.stringify(data),
             success: function() {
                 const Toast = Swal.mixin({
                     toast: true,
@@ -1913,6 +2062,7 @@
                 });
                 cargarFotos(fichaActualId);
                 $('#fotoForm')[0].reset();
+                document.getElementById('preview').innerHTML = '';
                 
                 // Cerrar el modal de foto
                 const fotoModal = bootstrap.Modal.getInstance(document.getElementById('fotoModal'));
@@ -1922,6 +2072,48 @@
             },
             error: function(xhr) {
                 Swal.fire('Error', xhr.responseJSON?.message || 'Error al agregar', 'error');
+            }
+        });
+    }
+
+    function enviarFotoConArchivo(archivo, descripcion, tipoOrigen) {
+        const formData = new FormData();
+        formData.append('archivo', archivo);
+        formData.append('descripcion', descripcion || '');
+        formData.append('tipo_origen', tipoOrigen);
+
+        $.ajax({
+            url: `/fichas-actividad/${fichaActualId}/detalles/fotos`,
+            type: 'POST',
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            contentType: false,
+            processData: false,
+            data: formData,
+            success: function() {
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2000,
+                    timerProgressBar: true
+                });
+                Toast.fire({
+                    icon: 'success',
+                    title: 'Foto subida correctamente'
+                });
+                cargarFotos(fichaActualId);
+                $('#fotoForm')[0].reset();
+                document.getElementById('preview').innerHTML = '';
+                
+                // Cerrar el modal de foto
+                const fotoModal = bootstrap.Modal.getInstance(document.getElementById('fotoModal'));
+                if (fotoModal) {
+                    fotoModal.hide();
+                }
+            },
+            error: function(xhr) {
+                console.error('Error response:', xhr.responseJSON);
+                Swal.fire('Error', xhr.responseJSON?.message || 'Error al subir la foto', 'error');
             }
         });
     }
@@ -2109,6 +2301,152 @@
                 });
             }
         });
+    }
+
+    function editarFoto(fichaId, fotoId) {
+        // Cargar datos de la foto
+        $.get(`/fichas-actividad/${fichaId}/detalles/fotos/${fotoId}`, function(foto) {
+            // Rellenar el formulario con los datos actuales
+            document.querySelector('input[name="tipo_origen"][value="' + foto.tipo_origen + '"]').checked = true;
+            
+            if (foto.tipo_origen === 'url') {
+                document.getElementById('foto_url').value = foto.url;
+                document.getElementById('urlInput').style.display = 'block';
+                document.getElementById('archivoInput').style.display = 'none';
+                document.getElementById('infoUrl').style.display = 'block';
+                document.getElementById('infoArchivo').style.display = 'none';
+            } else {
+                document.getElementById('archivoInput').style.display = 'block';
+                document.getElementById('urlInput').style.display = 'none';
+                document.getElementById('infoUrl').style.display = 'none';
+                document.getElementById('infoArchivo').style.display = 'block';
+                // Mostrar foto actual como preview
+                document.getElementById('preview').innerHTML = `<img src="${foto.foto_url}" alt="Preview actual" style="max-width: 200px; max-height: 200px; border-radius: 4px; margin-top: 10px;">`;
+            }
+            
+            document.getElementById('foto_descripcion').value = foto.descripcion || '';
+            
+            // Cambiar botón a "Actualizar"
+            const btnGuardar = document.querySelector('button[onclick="guardarFoto()"]');
+            const btnOriginal = btnGuardar.innerHTML;
+            btnGuardar.innerHTML = '💾 Actualizar Foto';
+            
+            // Cambiar función onclick
+            btnGuardar.onclick = function() {
+                actualizarFoto(fichaId, fotoId, btnGuardar, btnOriginal);
+            };
+            
+            // Mostrar modal
+            $('#fotoModal').modal('show');
+        }).fail(function() {
+            Swal.fire('Error', 'No se pudo cargar la foto', 'error');
+        });
+    }
+
+    function actualizarFoto(fichaId, fotoId, btnGuardar, btnOriginal) {
+        const tipoOrigen = document.querySelector('input[name="tipo_origen"]:checked').value;
+        const descripcion = $('#foto_descripcion').val();
+
+        if (tipoOrigen === 'url') {
+            const url = $('#foto_url').val();
+            if (!url) {
+                Swal.fire('Error', 'Ingresa la URL de la foto', 'error');
+                return;
+            }
+            
+            $.ajax({
+                url: `/fichas-actividad/${fichaId}/detalles/fotos/${fotoId}`,
+                type: 'PUT',
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                contentType: 'application/json',
+                data: JSON.stringify({ url, descripcion: descripcion || null, tipo_origen: tipoOrigen }),
+                success: function() {
+                    Swal.fire('Éxito', 'Foto actualizada correctamente', 'success');
+                    cargarFotos(fichaId);
+                    $('#fotoForm')[0].reset();
+                    document.getElementById('preview').innerHTML = '';
+                    btnGuardar.innerHTML = btnOriginal;
+                    btnGuardar.onclick = function() { guardarFoto(); };
+                    
+                    const fotoModal = bootstrap.Modal.getInstance(document.getElementById('fotoModal'));
+                    if (fotoModal) fotoModal.hide();
+                },
+                error: function(xhr) {
+                    Swal.fire('Error', xhr.responseJSON?.message || 'Error al actualizar', 'error');
+                }
+            });
+        } else {
+            const archivo = document.getElementById('foto_archivo').files[0];
+            
+            // Si no selecciona archivo, mantener el actual (solo cambiar descripción)
+            if (!archivo) {
+                $.ajax({
+                    url: `/fichas-actividad/${fichaId}/detalles/fotos/${fotoId}`,
+                    type: 'PUT',
+                    headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                    contentType: 'application/json',
+                    data: JSON.stringify({ descripcion: descripcion || null, tipo_origen: tipoOrigen }),
+                    success: function() {
+                        Swal.fire('Éxito', 'Foto actualizada correctamente', 'success');
+                        cargarFotos(fichaId);
+                        $('#fotoForm')[0].reset();
+                        document.getElementById('preview').innerHTML = '';
+                        btnGuardar.innerHTML = btnOriginal;
+                        btnGuardar.onclick = function() { guardarFoto(); };
+                        
+                        const fotoModal = bootstrap.Modal.getInstance(document.getElementById('fotoModal'));
+                        if (fotoModal) fotoModal.hide();
+                    },
+                    error: function(xhr) {
+                        Swal.fire('Error', xhr.responseJSON?.message || 'Error al actualizar', 'error');
+                    }
+                });
+                return;
+            }
+            
+            // Validar nuevo archivo
+            if (!archivo.type.startsWith('image/')) {
+                Swal.fire('Error', 'El archivo debe ser una imagen', 'error');
+                return;
+            }
+            // Validar tamaño (30MB = 30 * 1024 * 1024)
+            const MAX_SIZE = 30 * 1024 * 1024;
+            if (archivo.size > MAX_SIZE) {
+                const sizeInMB = Math.round(archivo.size / (1024 * 1024));
+                Swal.fire('Error', `La imagen no debe exceder 30MB. Archivo: ${sizeInMB}MB`, 'error');
+                return;
+            }
+            
+            // Enviar con nuevo archivo
+            const formData = new FormData();
+            formData.append('archivo', archivo);
+            formData.append('descripcion', descripcion || '');
+            formData.append('tipo_origen', tipoOrigen);
+            formData.append('_method', 'PUT');
+            
+            $.ajax({
+                url: `/fichas-actividad/${fichaId}/detalles/fotos/${fotoId}`,
+                type: 'POST',
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                contentType: false,
+                processData: false,
+                data: formData,
+                success: function() {
+                    Swal.fire('Éxito', 'Foto actualizada correctamente', 'success');
+                    cargarFotos(fichaId);
+                    $('#fotoForm')[0].reset();
+                    document.getElementById('preview').innerHTML = '';
+                    btnGuardar.innerHTML = btnOriginal;
+                    btnGuardar.onclick = function() { guardarFoto(); };
+                    
+                    const fotoModal = bootstrap.Modal.getInstance(document.getElementById('fotoModal'));
+                    if (fotoModal) fotoModal.hide();
+                },
+                error: function(xhr) {
+                    Swal.fire('Error', xhr.responseJSON?.message || 'Error al actualizar', 'error');
+                }
+            });
+        }
     }
 
     function eliminarFoto(fichaId, fotoId) {

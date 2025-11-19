@@ -375,24 +375,72 @@ class FichaActividadDetalleController extends Controller
     {
         $ficha = FichaActividad::findOrFail($fichaId);
 
+        // Validar que sea URL o archivo, pero no ambos (30MB = 30720 KB)
         $validated = $request->validate([
-            'url' => 'required|url',
+            'tipo_origen' => 'required|in:url,archivo',
+            'url' => 'required_if:tipo_origen,url|nullable|url',
+            'archivo' => 'required_if:tipo_origen,archivo|nullable|image|mimes:jpeg,png,gif,webp|max:30720',
             'descripcion' => 'nullable|string|max:500'
         ]);
 
         try {
-            $validated['ficha_actividad_id'] = $fichaId;
-            $validated['usuario_creacion_id'] = auth()->id() ?? 1;
-            $validated['fecha'] = now();
+            $fotoData = [
+                'ficha_actividad_id' => $fichaId,
+                'usuario_creacion_id' => auth()->id() ?? 1,
+                'fecha' => now(),
+                'descripcion' => $validated['descripcion'] ?? null,
+                'tipo_origen' => $validated['tipo_origen']
+            ];
 
-            $foto = FotoFichaActividad::create($validated);
+            // Si es URL
+            if ($validated['tipo_origen'] === 'url') {
+                $fotoData['url'] = $validated['url'];
+                
+                Log::info('Foto URL agregada', [
+                    'ficha_id' => $fichaId,
+                    'url' => $validated['url']
+                ]);
+            }
+            // Si es archivo
+            else if ($validated['tipo_origen'] === 'archivo') {
+                $archivo = $request->file('archivo');
+                
+                // Crear directorio si no existe
+                $rutaDir = "fotos/ficha_{$fichaId}";
+                
+                // Generar nombre único
+                $nombreArchivo = time() . '_' . uniqid() . '.' . $archivo->getClientOriginalExtension();
+                
+                // Guardar archivo
+                $rutaGuardada = \Storage::disk('public')->putFileAs($rutaDir, $archivo, $nombreArchivo);
+                
+                $fotoData['archivo_nombre'] = $archivo->getClientOriginalName();
+                $fotoData['archivo_ruta'] = $rutaGuardada;
+                $fotoData['archivo_mime'] = $archivo->getClientMimeType();
+                $fotoData['archivo_tamaño'] = $archivo->getSize();
+                
+                Log::info('Foto archivo subida', [
+                    'ficha_id' => $fichaId,
+                    'archivo_nombre' => $fotoData['archivo_nombre'],
+                    'archivo_ruta' => $rutaGuardada,
+                    'archivo_tamaño' => $fotoData['archivo_tamaño']
+                ]);
+            }
+
+            $foto = FotoFichaActividad::create($fotoData);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Foto agregada exitosamente.',
-                'data' => $foto
+                'data' => $foto->load('usuarioCreacion')
             ], 201);
         } catch (\Exception $e) {
+            Log::error('Error al agregar foto', [
+                'ficha_id' => $fichaId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
@@ -401,21 +449,134 @@ class FichaActividadDetalleController extends Controller
     {
         $foto = FotoFichaActividad::where('ficha_actividad_id', $fichaId)->findOrFail($fotoId);
 
-        $validated = $request->validate([
-            'url' => 'required|url',
+        // Usar tipo_origen actual si no se proporciona
+        $tipoOrigen = $request->input('tipo_origen', $foto->tipo_origen);
+
+        // Validación flexible (30MB = 30720 KB)
+        $rules = [
+            'tipo_origen' => 'nullable|in:url,archivo',
+            'url' => 'nullable|url',
+            'archivo' => 'nullable|image|mimes:jpeg,png,gif,webp|max:30720',
             'descripcion' => 'nullable|string|max:500'
-        ]);
+        ];
+
+        // Si está cambiando a URL, requiere URL
+        if ($tipoOrigen === 'url' && $request->has('tipo_origen')) {
+            $rules['url'] = 'required|url';
+        }
+
+        // Si está cambiando a archivo, requiere archivo
+        if ($tipoOrigen === 'archivo' && $request->has('tipo_origen')) {
+            $rules['archivo'] = 'required|image|mimes:jpeg,png,gif,webp|max:30720';
+        }
+
+        $validated = $request->validate($rules);
 
         try {
-            $validated['usuario_actualizacion_id'] = auth()->id() ?? 1;
-            $foto->update($validated);
+            $updateData = [
+                'descripcion' => $validated['descripcion'] ?? null,
+                'usuario_actualizacion_id' => auth()->id() ?? 1
+            ];
+
+            // Si cambió de archivo a URL
+            if ($foto->tipo_origen === 'archivo' && $tipoOrigen === 'url') {
+                if ($foto->archivo_ruta && \Storage::disk('public')->exists($foto->archivo_ruta)) {
+                    \Storage::disk('public')->delete($foto->archivo_ruta);
+                }
+                
+                $updateData['tipo_origen'] = 'url';
+                $updateData['archivo_nombre'] = null;
+                $updateData['archivo_ruta'] = null;
+                $updateData['archivo_mime'] = null;
+                $updateData['archivo_tamaño'] = null;
+                $updateData['url'] = $validated['url'] ?? null;
+                
+                Log::info('Foto actualizada: Archivo → URL', [
+                    'foto_id' => $fotoId,
+                    'ficha_id' => $fichaId,
+                    'nueva_url' => $validated['url'] ?? null
+                ]);
+            }
+            // Si cambió de URL a archivo
+            else if ($foto->tipo_origen === 'url' && $tipoOrigen === 'archivo' && $request->hasFile('archivo')) {
+                $archivo = $request->file('archivo');
+                $rutaDir = "fotos/ficha_{$fichaId}";
+                $nombreArchivo = time() . '_' . uniqid() . '.' . $archivo->getClientOriginalExtension();
+                $rutaGuardada = \Storage::disk('public')->putFileAs($rutaDir, $archivo, $nombreArchivo);
+                
+                $updateData['tipo_origen'] = 'archivo';
+                $updateData['url'] = null;
+                $updateData['archivo_nombre'] = $archivo->getClientOriginalName();
+                $updateData['archivo_ruta'] = $rutaGuardada;
+                $updateData['archivo_mime'] = $archivo->getClientMimeType();
+                $updateData['archivo_tamaño'] = $archivo->getSize();
+                
+                Log::info('Foto actualizada: URL → Archivo', [
+                    'foto_id' => $fotoId,
+                    'ficha_id' => $fichaId,
+                    'archivo_ruta' => $rutaGuardada
+                ]);
+            }
+            // Si es archivo reemplazando archivo
+            else if ($tipoOrigen === 'archivo' && $request->hasFile('archivo')) {
+                $archivo = $request->file('archivo');
+                
+                // Eliminar archivo anterior
+                if ($foto->archivo_ruta && \Storage::disk('public')->exists($foto->archivo_ruta)) {
+                    \Storage::disk('public')->delete($foto->archivo_ruta);
+                }
+                
+                $rutaDir = "fotos/ficha_{$fichaId}";
+                $nombreArchivo = time() . '_' . uniqid() . '.' . $archivo->getClientOriginalExtension();
+                $rutaGuardada = \Storage::disk('public')->putFileAs($rutaDir, $archivo, $nombreArchivo);
+                
+                $updateData['tipo_origen'] = 'archivo';
+                $updateData['archivo_nombre'] = $archivo->getClientOriginalName();
+                $updateData['archivo_ruta'] = $rutaGuardada;
+                $updateData['archivo_mime'] = $archivo->getClientMimeType();
+                $updateData['archivo_tamaño'] = $archivo->getSize();
+                
+                Log::info('Foto actualizada: Archivo reemplazado', [
+                    'foto_id' => $fotoId,
+                    'ficha_id' => $fichaId,
+                    'archivo_ruta' => $rutaGuardada
+                ]);
+            }
+            // Si es URL reemplazando URL (o solo cambio de descripción en URL)
+            else if ($tipoOrigen === 'url' && $validated['url']) {
+                $updateData['tipo_origen'] = 'url';
+                $updateData['url'] = $validated['url'];
+                
+                Log::info('Foto actualizada: URL reemplazada', [
+                    'foto_id' => $fotoId,
+                    'ficha_id' => $fichaId,
+                    'nueva_url' => $validated['url']
+                ]);
+            }
+            // Solo cambio de descripción
+            else {
+                $updateData['tipo_origen'] = $foto->tipo_origen;
+                Log::info('Foto actualizada: Solo descripción', [
+                    'foto_id' => $fotoId,
+                    'ficha_id' => $fichaId
+                ]);
+            }
+
+            $foto->update($updateData);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Foto actualizada exitosamente.',
-                'data' => $foto
+                'data' => $foto->fresh()->load('usuarioActualizacion')
             ], 200);
         } catch (\Exception $e) {
+            Log::error('Error al actualizar foto', [
+                'foto_id' => $fotoId,
+                'ficha_id' => $fichaId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
@@ -424,10 +585,35 @@ class FichaActividadDetalleController extends Controller
     {
         try {
             $foto = FotoFichaActividad::where('ficha_actividad_id', $fichaId)->findOrFail($fotoId);
+            
+            // Si es archivo, eliminar del almacenamiento
+            if ($foto->tipo_origen === 'archivo' && $foto->archivo_ruta) {
+                if (\Storage::disk('public')->exists($foto->archivo_ruta)) {
+                    \Storage::disk('public')->delete($foto->archivo_ruta);
+                    
+                    Log::info('Archivo de foto eliminado', [
+                        'foto_id' => $fotoId,
+                        'archivo_ruta' => $foto->archivo_ruta
+                    ]);
+                }
+            }
+            
             $foto->delete();
+            
+            Log::info('Foto eliminada', [
+                'foto_id' => $fotoId,
+                'ficha_id' => $fichaId,
+                'tipo_origen' => $foto->tipo_origen
+            ]);
 
             return response()->json(['success' => true, 'message' => 'Foto eliminada.'], 200);
         } catch (\Exception $e) {
+            Log::error('Error al eliminar foto', [
+                'foto_id' => $fotoId,
+                'ficha_id' => $fichaId,
+                'error' => $e->getMessage()
+            ]);
+            
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
@@ -587,11 +773,60 @@ class FichaActividadDetalleController extends Controller
     public function getFotos($fichaId)
     {
         try {
-            $fotos = FotoFichaActividad::where('ficha_actividad_id', $fichaId)->get();
+            $fotos = FotoFichaActividad::with('usuarioCreacion', 'usuarioActualizacion')
+                ->where('ficha_actividad_id', $fichaId)
+                ->get()
+                ->map(function ($foto) {
+                    return [
+                        'id' => $foto->id,
+                        'descripcion' => $foto->descripcion,
+                        'tipo_origen' => $foto->tipo_origen,
+                        'url' => $foto->url,
+                        'archivo_nombre' => $foto->archivo_nombre,
+                        'archivo_ruta' => $foto->archivo_ruta,
+                        'archivo_mime' => $foto->archivo_mime,
+                        'archivo_tamaño' => $foto->archivo_tamaño,
+                        'archivo_tamaño_formateado' => $foto->tamaño_formateado,
+                        'foto_url' => $foto->foto_url, // Accessor para obtener URL correcta
+                        'fecha' => $foto->fecha,
+                        'fecha_formateada' => $foto->fecha_formateada,
+                        'usuario_creacion' => $foto->usuarioCreacion?->nombre ?? 'Sistema',
+                        'usuario_actualizacion' => $foto->usuarioActualizacion?->nombre ?? null
+                    ];
+                });
 
             return response()->json(['success' => true, 'data' => $fotos], 200);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function getFoto($fichaId, $fotoId)
+    {
+        try {
+            $foto = FotoFichaActividad::with('usuarioCreacion', 'usuarioActualizacion')
+                ->where('id', $fotoId)
+                ->where('ficha_actividad_id', $fichaId)
+                ->firstOrFail();
+
+            return response()->json([
+                'id' => $foto->id,
+                'descripcion' => $foto->descripcion,
+                'tipo_origen' => $foto->tipo_origen,
+                'url' => $foto->url,
+                'archivo_nombre' => $foto->archivo_nombre,
+                'archivo_ruta' => $foto->archivo_ruta,
+                'archivo_mime' => $foto->archivo_mime,
+                'archivo_tamaño' => $foto->archivo_tamaño,
+                'archivo_tamaño_formateado' => $foto->tamaño_formateado,
+                'foto_url' => $foto->foto_url,
+                'fecha' => $foto->fecha,
+                'fecha_formateada' => $foto->fecha_formateada,
+                'usuario_creacion' => $foto->usuarioCreacion?->nombre ?? 'Sistema',
+                'usuario_actualizacion' => $foto->usuarioActualizacion?->nombre ?? null
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Foto no encontrada'], 404);
         }
     }
 

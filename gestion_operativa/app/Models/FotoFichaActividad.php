@@ -18,8 +18,15 @@ class FotoFichaActividad extends Model
         'fecha',
         'estado',
         'usuario_creacion_id',
-        'usuario_actualizacion_id'
+        'usuario_actualizacion_id',
+        'archivo_nombre',
+        'archivo_ruta',
+        'archivo_mime',
+        'archivo_tamaño',
+        'tipo_origen'
     ];
+
+    protected $appends = ['foto_url', 'tamaño_formateado', 'fecha_formateada'];
 
     protected $casts = [
         'estado' => 'boolean',
@@ -62,5 +69,37 @@ class FotoFichaActividad extends Model
     public function getFechaFormateadaAttribute()
     {
         return $this->fecha ? $this->fecha->format('d/m/Y H:i') : '-';
+    }
+
+    public function getFotoUrlAttribute()
+    {
+        // Si es URL, retornar directamente
+        if ($this->tipo_origen === 'url' && $this->url) {
+            return $this->url;
+        }
+        
+        // Si es archivo, construir la ruta pública
+        if ($this->tipo_origen === 'archivo' && $this->archivo_ruta) {
+            return asset('storage/' . $this->archivo_ruta);
+        }
+        
+        // Fallback a placeholder
+        return asset('images/placeholder.png');
+    }
+
+    public function getTamañoFormateadoAttribute()
+    {
+        if (!$this->archivo_tamaño) {
+            return '-';
+        }
+        
+        $bytes = $this->archivo_tamaño;
+        $units = ['B', 'KB', 'MB', 'GB'];
+        $bytes = max($bytes, 0);
+        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+        $pow = min($pow, count($units) - 1);
+        $bytes /= (1 << (10 * $pow));
+        
+        return round($bytes, 2) . ' ' . $units[$pow];
     }
 }
