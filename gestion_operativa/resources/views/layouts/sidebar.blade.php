@@ -33,7 +33,7 @@
                         <img src="{{Vite::asset('resources/images/Logo sin fondo.png')}}" class="logo-dark navbar-logo-g" alt="logo">
                     </a>
                 </div>
-                <div class="kong ">
+                <div class="kong">
                     <a href="{{getRouterValue()}}dashboard/analytics" class="nav-link"> CONTRATISTAS<br>GENERALES </a>
                 </div>
             </div>
