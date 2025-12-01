@@ -272,4 +272,95 @@ class EmpleadoController extends Controller
             'message' => 'Usuario eliminado exitosamente.'
         ]);
     }
+
+    // Obtener Departamentos (Ubigeos padres)
+    public function getDepartamentos()
+    {
+        $departamentos = Ubigeo::whereNull('dependencia_id')
+            ->where('estado', true)
+            ->select('id', 'nombre')
+            ->orderBy('nombre')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'text' => $item->nombre
+                ];
+            });
+
+        return response()->json($departamentos);
+    }
+
+    // Obtener Provincias (Hijos del Departamento)
+    public function getProvincias($departamento_id)
+    {
+        $provincias = Ubigeo::where('dependencia_id', $departamento_id)
+            ->where('estado', true)
+            ->select('id', 'nombre')
+            ->orderBy('nombre')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'text' => $item->nombre
+                ];
+            });
+
+        return response()->json($provincias);
+    }
+
+    // Obtener Distritos (Hijos de la Provincia)
+    public function getDistritos($provincia_id)
+    {
+        $distritos = Ubigeo::where('dependencia_id', $provincia_id)
+            ->where('estado', true)
+            ->select('id', 'nombre')
+            ->orderBy('nombre')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'text' => $item->nombre
+                ];
+            });
+
+        return response()->json($distritos);
+    }
+
+    // Obtener la jerarquía completa de ubigeo (Departamento, Provincia, Distrito) a partir del ID del distrito
+    public function getUbigeoHierarquia($ubigeo_id)
+    {
+        try {
+            $ubigeo = Ubigeo::findOrFail($ubigeo_id);
+            
+            // Inicializamos los niveles
+            $distrito = $ubigeo;
+            $provincia = null;
+            $departamento = null;
+            
+            // Recorremos hacia arriba en la jerarquía
+            if ($distrito->dependencia) {
+                $provincia = $distrito->dependencia;
+                
+                if ($provincia->dependencia) {
+                    $departamento = $provincia->dependencia;
+                }
+            }
+            
+            return response()->json([
+                'success' => true,
+                'departamento_id' => $departamento ? $departamento->id : null,
+                'provincia_id' => $provincia ? $provincia->id : null,
+                'distrito_id' => $distrito->id,
+                'departamento_nombre' => $departamento ? $departamento->nombre : null,
+                'provincia_nombre' => $provincia ? $provincia->nombre : null,
+                'distrito_nombre' => $distrito->nombre
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener la jerarquía del ubigeo: ' . $e->getMessage()
+            ], 404);
+        }
+    }
 }

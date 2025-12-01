@@ -22,7 +22,7 @@ return new class extends Migration
             $table->bigInteger('archivo_tamaño')->nullable()->after('archivo_mime')->comment('Tamaño del archivo en bytes');
             
             // Campo para indicar el tipo de origen (url o archivo)
-            $table->enum('tipo_origen', ['url', 'archivo'])->default('url')->after('archivo_tamaño')->comment('Origen de la foto: URL o archivo subido');
+            $table->enum('tipo_origen', ['url', 'archivo','camara'])->default('url')->after('archivo_tamaño')->comment('Origen de la foto: URL o archivo subido');
         });
     }
 

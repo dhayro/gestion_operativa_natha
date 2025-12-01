@@ -1,5 +1,13 @@
 @extends('layouts.app')
 
+@section('styles')
+<style>
+    .modal-content { 
+        background: #fff !important; 
+    }
+</style>
+@endsection
+
 @section('content')
 <div class="container-fluid">
     <div class="row">
@@ -224,7 +232,7 @@
                     processing: true,
                     serverSide: true,
                     language: {
-                        url: 'https://cdn.datatables.net/plug-ins/1.11.5/i18n/es_es.json'
+                        url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
                     },
                     ajax: {
                         url: '{{ route("stock_materiales.getData", ["cuadrillaId" => ":cuadrillaId"]) }}'.replace(':cuadrillaId', cuadrillaId),
@@ -286,7 +294,7 @@
             processing: true,
             serverSide: true,
             language: {
-                url: 'https://cdn.datatables.net/plug-ins/1.11.5/i18n/es_es.json'
+                url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json'
             },
             ajax: {
                 url: '{{ route("stock_materiales.getMovimientos", ["materialId" => ":materialId", "cuadrillaId" => ":cuadrillaId"]) }}'

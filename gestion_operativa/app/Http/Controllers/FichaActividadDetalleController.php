@@ -375,11 +375,12 @@ class FichaActividadDetalleController extends Controller
     {
         $ficha = FichaActividad::findOrFail($fichaId);
 
-        // Validar que sea URL o archivo, pero no ambos (30MB = 30720 KB)
+        // Validar que sea URL, archivo o cámara (30MB = 30720 KB)
         $validated = $request->validate([
-            'tipo_origen' => 'required|in:url,archivo',
+            'tipo_origen' => 'required|in:url,archivo,camara',
             'url' => 'required_if:tipo_origen,url|nullable|url',
             'archivo' => 'required_if:tipo_origen,archivo|nullable|image|mimes:jpeg,png,gif,webp|max:30720',
+            'archivo' => 'required_if:tipo_origen,camara|nullable|image|mimes:jpeg,png,gif,webp|max:30720',
             'descripcion' => 'nullable|string|max:500'
         ]);
 
@@ -426,6 +427,31 @@ class FichaActividadDetalleController extends Controller
                     'archivo_tamaño' => $fotoData['archivo_tamaño']
                 ]);
             }
+            // Si es cámara (procesar igual que archivo)
+            else if ($validated['tipo_origen'] === 'camara') {
+                $archivo = $request->file('archivo');
+                
+                // Crear directorio si no existe
+                $rutaDir = "fotos/ficha_{$fichaId}";
+                
+                // Generar nombre único
+                $nombreArchivo = time() . '_' . uniqid() . '.' . $archivo->getClientOriginalExtension();
+                
+                // Guardar archivo
+                $rutaGuardada = \Storage::disk('public')->putFileAs($rutaDir, $archivo, $nombreArchivo);
+                
+                $fotoData['archivo_nombre'] = $archivo->getClientOriginalName();
+                $fotoData['archivo_ruta'] = $rutaGuardada;
+                $fotoData['archivo_mime'] = $archivo->getClientMimeType();
+                $fotoData['archivo_tamaño'] = $archivo->getSize();
+                
+                Log::info('Foto cámara capturada', [
+                    'ficha_id' => $fichaId,
+                    'archivo_nombre' => $fotoData['archivo_nombre'],
+                    'archivo_ruta' => $rutaGuardada,
+                    'archivo_tamaño' => $fotoData['archivo_tamaño']
+                ]);
+            }
 
             $foto = FotoFichaActividad::create($fotoData);
 
@@ -454,7 +480,7 @@ class FichaActividadDetalleController extends Controller
 
         // Validación flexible (30MB = 30720 KB)
         $rules = [
-            'tipo_origen' => 'nullable|in:url,archivo',
+            'tipo_origen' => 'nullable|in:url,archivo,camara',
             'url' => 'nullable|url',
             'archivo' => 'nullable|image|mimes:jpeg,png,gif,webp|max:30720',
             'descripcion' => 'nullable|string|max:500'
@@ -467,6 +493,11 @@ class FichaActividadDetalleController extends Controller
 
         // Si está cambiando a archivo, requiere archivo
         if ($tipoOrigen === 'archivo' && $request->has('tipo_origen')) {
+            $rules['archivo'] = 'required|image|mimes:jpeg,png,gif,webp|max:30720';
+        }
+
+        // Si está cambiando a cámara, requiere archivo
+        if ($tipoOrigen === 'camara' && $request->has('tipo_origen')) {
             $rules['archivo'] = 'required|image|mimes:jpeg,png,gif,webp|max:30720';
         }
 
@@ -537,6 +568,31 @@ class FichaActividadDetalleController extends Controller
                 $updateData['archivo_tamaño'] = $archivo->getSize();
                 
                 Log::info('Foto actualizada: Archivo reemplazado', [
+                    'foto_id' => $fotoId,
+                    'ficha_id' => $fichaId,
+                    'archivo_ruta' => $rutaGuardada
+                ]);
+            }
+            // Si es cámara reemplazando cámara (procesar igual que archivo)
+            else if ($tipoOrigen === 'camara' && $request->hasFile('archivo')) {
+                $archivo = $request->file('archivo');
+                
+                // Eliminar archivo anterior
+                if ($foto->archivo_ruta && \Storage::disk('public')->exists($foto->archivo_ruta)) {
+                    \Storage::disk('public')->delete($foto->archivo_ruta);
+                }
+                
+                $rutaDir = "fotos/ficha_{$fichaId}";
+                $nombreArchivo = time() . '_' . uniqid() . '.' . $archivo->getClientOriginalExtension();
+                $rutaGuardada = \Storage::disk('public')->putFileAs($rutaDir, $archivo, $nombreArchivo);
+                
+                $updateData['tipo_origen'] = 'camara';
+                $updateData['archivo_nombre'] = $archivo->getClientOriginalName();
+                $updateData['archivo_ruta'] = $rutaGuardada;
+                $updateData['archivo_mime'] = $archivo->getClientMimeType();
+                $updateData['archivo_tamaño'] = $archivo->getSize();
+                
+                Log::info('Foto actualizada: Cámara reemplazada', [
                     'foto_id' => $fotoId,
                     'ficha_id' => $fichaId,
                     'archivo_ruta' => $rutaGuardada

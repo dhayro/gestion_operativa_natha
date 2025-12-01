@@ -83,6 +83,11 @@ class FotoFichaActividad extends Model
             return asset('storage/' . $this->archivo_ruta);
         }
         
+        // Si es cámara, construir la ruta pública (igual que archivo)
+        if ($this->tipo_origen === 'camara' && $this->archivo_ruta) {
+            return asset('storage/' . $this->archivo_ruta);
+        }
+        
         // Fallback a placeholder
         return asset('images/placeholder.png');
     }

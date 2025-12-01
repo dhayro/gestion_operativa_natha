@@ -25,8 +25,31 @@ class SoatController extends Controller
     public function getData(Request $request)
     {
         if ($request->ajax()) {
-            $soats = Soat::with(['vehiculo', 'proveedor'])
+            // Obtener todos los vehículos con sus SOATs (si existen)
+            $vehiculosConSoat = Soat::with(['vehiculo', 'proveedor'])
                 ->select(['id', 'vehiculo_id', 'proveedor_id', 'numero_soat', 'fecha_emision', 'fecha_vencimiento', 'estado']);
+            
+            // Obtener vehículos sin SOAT
+            $vehiculosSinSoat = Vehiculo::whereNotIn('id', Soat::pluck('vehiculo_id'))
+                ->select('id', 'marca', 'nombre', 'placa')
+                ->get()
+                ->map(function ($vehiculo) {
+                    return (object) [
+                        'id' => null,
+                        'vehiculo_id' => $vehiculo->id,
+                        'proveedor_id' => null,
+                        'numero_soat' => null,
+                        'fecha_emision' => null,
+                        'fecha_vencimiento' => null,
+                        'estado' => null,
+                        'vehiculo' => $vehiculo,
+                        'proveedor' => null,
+                        'sin_soat' => true
+                    ];
+                });
+
+            // Combinar ambas colecciones
+            $soats = collect($vehiculosConSoat->get())->merge($vehiculosSinSoat);
             
             return DataTables::of($soats)
                 ->addIndexColumn()
@@ -36,7 +59,10 @@ class SoatController extends Controller
                         'N/A';
                 })
                 ->addColumn('proveedor_nombre', function ($row) {
-                    return $row->proveedor ? $row->proveedor->nombre : 'N/A';
+                    return $row->proveedor ? $row->proveedor->nombre : '<span class="badge badge-secondary">N/A</span>';
+                })
+                ->addColumn('numero_soat', function ($row) {
+                    return $row->numero_soat ?? '<span class="text-danger font-weight-bold">Sin SOAT</span>';
                 })
                 ->addColumn('fecha_emision_formatted', function ($row) {
                     return $row->fecha_emision ? $row->fecha_emision->format('d/m/Y') : '';
@@ -45,37 +71,49 @@ class SoatController extends Controller
                     return $row->fecha_vencimiento ? $row->fecha_vencimiento->format('d/m/Y') : '';
                 })
                 ->addColumn('vigencia_badge', function ($row) {
-                    if (!$row->fecha_vencimiento) return '<span class="badge badge-secondary">Sin fecha</span>';
+                    // Si no tiene SOAT
+                    if (!$row->fecha_vencimiento || $row->sin_soat ?? false) {
+                        return '<span class="badge badge-danger" style="font-size: 0.85rem;">❌ Sin SOAT</span>';
+                    }
                     
                     $hoy = Carbon::now('America/Lima');
                     $vencimiento = Carbon::parse($row->fecha_vencimiento);
                     $diasRestantes = $hoy->diffInDays($vencimiento, false);
                     
                     if ($diasRestantes < 0) {
-                        return '<span class="badge badge-danger">Vencido</span>';
+                        return '<span class="badge badge-danger">❌ Vencido</span>';
                     } elseif ($diasRestantes <= 30) {
-                        return '<span class="badge badge-warning">Por vencer</span>';
+                        return '<span class="badge badge-warning">⚠️ Por vencer</span>';
                     } else {
-                        return '<span class="badge badge-success">Vigente</span>';
+                        return '<span class="badge badge-success">✅ Vigente</span>';
                     }
                 })
                 ->addColumn('estado_badge', function ($row) {
+                    // Si no tiene SOAT, mostrar estado especial
+                    if (!$row->id || $row->sin_soat ?? false) {
+                        return '<span class="badge bg-danger">❌ Sin SOAT</span>';
+                    }
                     return $row->estado
-                        ? '<span class="badge badge-success">Activo</span>'
-                        : '<span class="badge badge-danger">Inactivo</span>';
+                        ? '<span class="badge bg-success">✅ Activo</span>'
+                        : '<span class="badge bg-danger">❌ Inactivo</span>';
                 })
                 ->addColumn('action', function ($row) {
+                    $btnEditar = '<a class="dropdown-item" href="javascript:void(0);" onclick="editSoat(' . ($row->id ?? $row->vehiculo_id) . ')">Editar</a>';
+                    $btnEliminar = $row->id ? '<a class="dropdown-item" href="javascript:void(0);" onclick="deleteSoat(' . $row->id . ')">Eliminar</a>' : '';
+                    $btnAgregarSoat = !$row->id || $row->sin_soat ?? false ? '<a class="dropdown-item" href="javascript:void(0);" onclick="agregarSoat(' . $row->vehiculo_id . ')">Agregar SOAT</a>' : '';
+                    
                     return '<div class="dropdown">
-                                <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink' . $row->id . '" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                                <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink' . ($row->id ?? $row->vehiculo_id) . '" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
                                 </a>
-                                <div class="dropdown-menu" aria-labelledby="dropdownMenuLink' . $row->id . '">
-                                    <a class="dropdown-item" href="javascript:void(0);" onclick="editSoat(' . $row->id . ')">Editar</a>
-                                    <a class="dropdown-item" href="javascript:void(0);" onclick="deleteSoat(' . $row->id . ')">Eliminar</a>
+                                <div class="dropdown-menu" aria-labelledby="dropdownMenuLink' . ($row->id ?? $row->vehiculo_id) . '">
+                                    ' . $btnAgregarSoat . '
+                                    ' . $btnEditar . '
+                                    ' . $btnEliminar . '
                                 </div>
                             </div>';
                 })
-                ->rawColumns(['vigencia_badge', 'estado_badge', 'action'])
+                ->rawColumns(['proveedor_nombre', 'numero_soat', 'vigencia_badge', 'estado_badge', 'action'])
                 ->make(true);
         }
     }
@@ -134,5 +172,63 @@ class SoatController extends Controller
         $soat = Soat::findOrFail($id);
         $soat->delete();
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Obtener vehículos sin SOAT o con SOAT vencido para el formulario
+     */
+    public function getVehiculosSinSoat()
+    {
+        // Vehículos SIN SOAT
+        $vehiculosSinSoat = Vehiculo::whereNotIn('id', Soat::pluck('vehiculo_id'))
+            ->select('id', 'marca', 'nombre', 'placa')
+            ->get()
+            ->map(function ($v) {
+                return [
+                    'id' => $v->id,
+                    'text' => $v->marca . ' ' . $v->nombre . ' (' . $v->placa . ') ❌ Sin SOAT',
+                    'estado' => 'sin_soat'
+                ];
+            });
+
+        // Vehículos CON SOAT VENCIDO
+        $today = \Carbon\Carbon::now()->format('Y-m-d');
+        $vehiculosVencidos = Vehiculo::whereIn('id', 
+            Soat::where('fecha_vencimiento', '<', $today)
+                ->where('estado', true)
+                ->pluck('vehiculo_id')
+        )
+            ->select('id', 'marca', 'nombre', 'placa')
+            ->get()
+            ->map(function ($v) {
+                return [
+                    'id' => $v->id,
+                    'text' => $v->marca . ' ' . $v->nombre . ' (' . $v->placa . ') 🔴 SOAT Vencido',
+                    'estado' => 'soat_vencido'
+                ];
+            });
+
+        return response()->json(
+            $vehiculosSinSoat->merge($vehiculosVencidos)
+        );
+    }
+
+    /**
+     * Obtener proveedores para el formulario
+     */
+    public function getProveedores()
+    {
+        try {
+            $proveedores = Proveedor::select('id', 'razon_social')
+                ->where('estado', true)
+                ->get()
+                ->map(function ($p) {
+                    return ['id' => $p->id, 'text' => $p->razon_social];
+                });
+
+            return response()->json($proveedores);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }

@@ -208,15 +208,18 @@ class CuadrillaEmpleadoController extends Controller
             }
         }
 
-        // Obtener empleados de esta cuadrilla específica
+        // Obtener empleados disponibles para esta cuadrilla
+        // (todos los empleados activos excepto los que ya están asignados activamente a esta cuadrilla)
         $query = Empleado::with(['cargo', 'area'])
-            ->where('estado', true) // Solo empleados activos
-            ->whereHas('cuadrillaEmpleados', function($q) use ($cuadrillaId) {
-                // Solo empleados que pertenecen a esta cuadrilla
-                $q->where('cuadrilla_id', $cuadrillaId)
+            ->where('empleados.estado', true) // Solo empleados activos
+            ->whereNotIn('empleados.id', function($q) use ($cuadrillaId, $empleadosEnFicha) {
+                // Excluir empleados ya asignados activamente a esta cuadrilla
+                $q->select('empleado_id')
+                  ->from('cuadrillas_empleados')
+                  ->where('cuadrilla_id', $cuadrillaId)
                   ->where('estado', 1);
             })
-            ->whereNotIn('id', $empleadosEnFicha) // Excluir solo los ya en la ficha
+            ->whereNotIn('empleados.id', $empleadosEnFicha) // Excluir también los ya en la ficha
             ->orderBy('nombre');
 
         if (!empty($search)) {
