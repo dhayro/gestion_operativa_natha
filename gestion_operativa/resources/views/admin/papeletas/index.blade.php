@@ -60,6 +60,20 @@
             padding: 15px;
             margin-bottom: 20px;
         }
+
+        /* Estilos para campos readonly */
+        input[readonly],
+        textarea[readonly] {
+            background-color: #e9ecef !important;
+            color: #212529 !important;
+            font-weight: 500;
+        }
+
+        input[readonly]:focus {
+            background-color: #e9ecef !important;
+            color: #212529 !important;
+            border-color: #bfc9d4 !important;
+        }
     </style>
 @endsection
 
@@ -146,7 +160,7 @@
                         <div class="col-md-12 mb-3">
                             <label for="km_salida" class="form-label">Kilómetros de Salida <span class="text-danger">*</span></label>
                             <div class="input-group">
-                                <input type="number" class="form-control" id="km_salida" name="km_salida" step="0.001" min="0" placeholder="0.000" required>
+                                <input type="number" class="form-control" id="km_salida" name="km_salida" step="0.001" min="0" placeholder="0.000" readonly required>
                                 <span class="input-group-text">km</span>
                             </div>
                             <small class="form-text text-muted">Se cargará automáticamente el último kilometraje registrado al seleccionar vehículo</small>

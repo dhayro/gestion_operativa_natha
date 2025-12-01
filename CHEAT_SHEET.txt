@@ -1,0 +1,236 @@
+═════════════════════════════════════════════════════════════════════════════
+                    UBIGEO IMPORT - CHEAT SHEET (REFERENCIA RÁPIDA)
+═════════════════════════════════════════════════════════════════════════════
+
+🖥️  EJECUTAR LA IMPORTACIÓN
+═════════════════════════════════════════════════════════════════════════════
+
+[1] WINDOWS - Doble clic (✨ MÁS FÁCIL)
+    Archivo: import_ubigeo.bat
+    ✓ Automático
+    ✓ Verifica Python
+    ✓ Instala dependencias
+
+[2] WINDOWS - Terminal (CMD)
+    $ cd D:\gestion_operativa_natha
+    $ python import_ubigeo.py "UBIGEO 2022_1891 distritos.xlsx"
+
+[3] WINDOWS - PowerShell
+    $ cd D:\gestion_operativa_natha
+    $ .\import_ubigeo.ps1
+
+[4] LINUX / MAC
+    $ cd /ruta/a/gestion_operativa_natha
+    $ python3 import_ubigeo.py "UBIGEO 2022_1891 distritos.xlsx"
+
+[5] LARAVEL (Recomendado)
+    $ cd gestion_operativa
+    $ php artisan ubigeo:import "../UBIGEO 2022_1891 distritos.xlsx" --limpiar
+
+═════════════════════════════════════════════════════════════════════════════
+
+⚙️  OPCIONES AVANZADAS
+═════════════════════════════════════════════════════════════════════════════
+
+# Limpiar tabla antes de importar
+$ python import_ubigeo.py archivo.xlsx --limpiar
+
+# Especificar host personalizado
+$ python import_ubigeo.py archivo.xlsx --host 192.168.1.100
+
+# Especificar usuario y contraseña
+$ python import_ubigeo.py archivo.xlsx --user admin --password mipass
+
+# Especificar base de datos
+$ python import_ubigeo.py archivo.xlsx --database otra_bd
+
+# Todas las opciones juntas
+$ python import_ubigeo.py archivo.xlsx \
+    --host localhost \
+    --user root \
+    --password "" \
+    --database gestion_operativa \
+    --limpiar
+
+═════════════════════════════════════════════════════════════════════════════
+
+✅ VERIFICAR RESULTADOS
+═════════════════════════════════════════════════════════════════════════════
+
+[A] Python Script
+    $ python check_ubigeo.py resumen
+    $ python check_ubigeo.py departamentos
+    $ python check_ubigeo.py provincias --dep 010000
+    $ python check_ubigeo.py distritos --prov 010100
+    $ python check_ubigeo.py jerarquia 010000
+
+[B] SQL Directo
+    $ mysql -u root gestion_operativa
+    > SELECT COUNT(*) FROM ubigeos;
+    > SELECT * FROM ubigeos WHERE codigo_postal LIKE '%0000' LIMIT 5;
+
+[C] Laravel Tinker
+    $ cd gestion_operativa
+    $ php artisan tinker
+    >>> Ubigeo::count()
+    >>> Ubigeo::where('codigo_postal', '010000')->first()
+
+═════════════════════════════════════════════════════════════════════════════
+
+💾 INSTALAR DEPENDENCIAS
+═════════════════════════════════════════════════════════════════════════════
+
+# Python (si no está instalado)
+Descargar desde: https://www.python.org/downloads/
+✓ Marcar "Add Python to PATH"
+
+# Dependencias Python
+$ pip install pandas mysql-connector-python openpyxl tabulate
+
+# Dependencias Laravel
+$ cd gestion_operativa
+$ composer require phpoffice/phpspreadsheet
+
+═════════════════════════════════════════════════════════════════════════════
+
+📂 ARCHIVOS ÚTILES
+═════════════════════════════════════════════════════════════════════════════
+
+import_ubigeo.py              ← Script principal
+import_ubigeo.bat             ← Windows ejecutable
+import_ubigeo.ps1             ← PowerShell
+check_ubigeo.py               ← Verificar datos
+config_ubigeo.py              ← Configurar credenciales
+ubigeo_import_config.json     ← Configuración
+
+EJEMPLOS_UBIGEO.sql           ← Queries SQL útiles
+IMPORTAR_UBIGEO.md            ← Documentación completa
+INICIO_RAPIDO.txt             ← Este archivo
+
+═════════════════════════════════════════════════════════════════════════════
+
+🐛 SOLUCIONAR PROBLEMAS
+═════════════════════════════════════════════════════════════════════════════
+
+❌ "python: command not found"
+   → Instala Python: https://www.python.org/downloads/
+   → Asegúrate de marcar "Add Python to PATH"
+
+❌ "ModuleNotFoundError: pandas"
+   → Instala dependencias: pip install pandas mysql-connector-python openpyxl
+
+❌ "Error de conexión: Access denied"
+   → Verifica credenciales en .env (DB_HOST, DB_USER, DB_PASSWORD)
+   → Verifica que MySQL está corriendo
+
+❌ "Error: Archivo no encontrado"
+   → Verifica la ruta del archivo (usa ruta completa)
+
+❌ Algunos registros no se importan
+   → Verifica que todas las filas tengan: IDDIST, NOMBDEP, NOMBPROV, NOMBDIST
+   → Busca filas vacías en el Excel
+
+═════════════════════════════════════════════════════════════════════════════
+
+📊 DATOS ESPERADOS EN EXCEL
+═════════════════════════════════════════════════════════════════════════════
+
+Columnas requeridas:
+  IDDIST      → Código UBIGEO (6 dígitos, ej: 010101)
+  NOMBDEP     → Departamento (ej: AMAZONAS)
+  NOMBPROV    → Provincia (ej: CHACHAPOYAS)
+  NOMBDIST    → Distrito (ej: CHACHAPOYAS)
+
+Opcionales:
+  NOM_CAPITAL → Capital del distrito
+  COD_REG_NAT → Código región natural
+  REGION NATURAL → Nombre región natural
+
+═════════════════════════════════════════════════════════════════════════════
+
+🗂️  ESTRUCTURA JERÁRQUICA
+═════════════════════════════════════════════════════════════════════════════
+
+Se importa automáticamente como:
+
+DEPARTAMENTO (010000)
+  └─ PROVINCIA (010100)
+      ├─ DISTRITO (010101)
+      ├─ DISTRITO (010102)
+      └─ DISTRITO (010103)
+
+Cada nivel se relaciona automáticamente mediante el campo dependencia_id
+
+═════════════════════════════════════════════════════════════════════════════
+
+🎯 CASOS DE USO
+═════════════════════════════════════════════════════════════════════════════
+
+En tu aplicación Laravel:
+
+[1] Obtener todos los distritos
+    $distritos = Ubigeo::where('codigo_postal', 'not like', '%00')->get();
+
+[2] Obtener distritos de una provincia
+    $provincia = Ubigeo::where('codigo_postal', '010100')->first();
+    $distritos = $provincia->dependientes;
+
+[3] Asignar UBIGEO a empleado
+    $empleado->ubigeo_id = 1;  // ID del UBIGEO
+    $empleado->save();
+
+[4] Ver ubicación completa de un empleado
+    $ubicacion = $empleado->ubigeo->nombre;
+
+═════════════════════════════════════════════════════════════════════════════
+
+⏱️  RENDIMIENTO APROXIMADO
+═════════════════════════════════════════════════════════════════════════════
+
+Python:     2,000-5,000 registros/minuto
+Artisan:    1,000-3,000 registros/minuto
+Directa:    10,000+ registros/minuto
+
+Para +10,000 registros: usa Python o importa SQL directo
+
+═════════════════════════════════════════════════════════════════════════════
+
+🔄 ROLLBACK (DESHACER)
+═════════════════════════════════════════════════════════════════════════════
+
+# Eliminar todos los datos
+$ mysql -u root gestion_operativa
+> TRUNCATE TABLE ubigeos;
+
+# Eliminar solo los nuevos datos (que comienzan con 0)
+> DELETE FROM ubigeos WHERE codigo_postal LIKE '0%';
+
+═════════════════════════════════════════════════════════════════════════════
+
+📝 NOTAS IMPORTANTES
+═════════════════════════════════════════════════════════════════════════════
+
+✓ El script detecta automáticamente si es departamento, provincia o distrito
+✓ Las relaciones jerárquicas se establecen automáticamente
+✓ No inserta duplicados (basado en codigo_postal)
+✓ Todos los registros se crean como "activos" (estado = 1)
+✓ El script es idempotente (seguro ejecutar varias veces)
+
+═════════════════════════════════════════════════════════════════════════════
+
+🆘 AYUDA RÁPIDA
+═════════════════════════════════════════════════════════════════════════════
+
+# Ver todas las opciones
+$ python import_ubigeo.py --help
+
+# Ver opciones de verificación
+$ python check_ubigeo.py --help
+
+# Ver opciones de configuración
+$ python config_ubigeo.py
+
+═════════════════════════════════════════════════════════════════════════════
+
+Última actualización: Diciembre 2025
+═════════════════════════════════════════════════════════════════════════════

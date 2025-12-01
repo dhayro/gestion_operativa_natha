@@ -180,6 +180,78 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Fix para Select2 y scroll en modal */
+        .modal.show {
+            overflow-y: auto;
+            padding-right: 0 !important;
+        }
+
+        .modal-body {
+            overflow-y: auto !important;
+            max-height: calc(100vh - 200px);
+            scroll-behavior: smooth;
+        }
+
+        .modal-dialog.modal-xl {
+            max-width: 95vw !important;
+            margin: auto !important;
+            max-height: 95vh !important;
+        }
+
+        .modal-dialog.modal-xl .modal-content {
+            max-height: 95vh !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+
+        .modal-dialog.modal-xl .modal-body {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            overflow-y: auto !important;
+        }
+
+        /* Prevenir que Select2 interfiera con el scroll */
+        .select2-container .select2-selection--single {
+            overflow: visible !important;
+        }
+
+        .select2-dropdown {
+            overflow-y: auto !important;
+            max-height: 300px !important;
+        }
+
+        /* Asegurar que Select2 no capture el scroll */
+        .select2-results {
+            max-height: 280px !important;
+            overflow-y: auto !important;
+        }
+
+        /* Permitir scroll en el modal incluso cuando Select2 está abierto */
+        body.modal-open {
+            overflow: hidden !important;
+        }
+
+        .modal {
+            padding-right: 0 !important;
+            overflow-y: auto !important;
+        }
+
+        .modal.show {
+            overflow-y: auto;
+            padding-right: 0 !important;
+        }
+
+        /* Asegurar que la tabla de detalles sea scrollable */
+        .table-responsive {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        /* Arreglar enfoque en Select2 */
+        .select2-container--open .select2-dropdown {
+            z-index: 9999 !important;
+        }
     </style>
 @endsection
 
@@ -484,7 +556,49 @@
             // Select2 inicialización
             $('#cuadrilla_id').select2();
             $('#empleado_id').select2();
-            $('#formNeaDetalle').select2();
+            $('#formNeaDetalle').select2({
+                dropdownParent: $('#pecosaModal')
+            });
+
+            // ===== FIX PARA SCROLL EN MODAL CON SELECT2 =====
+            // Permitir scroll en modal incluso cuando Select2 dropdown está abierto
+            $('#pecosaModal').on('shown.bs.modal', function() {
+                // Permitir scroll cuando la modal está completamente visible
+                $(document).off('wheel');
+                $(document).off('touchmove');
+            });
+
+            $('#pecosaModal').on('hidden.bs.modal', function() {
+                // Restaurar comportamiento normal cuando modal se cierra
+                $(document).off('wheel');
+                $(document).off('touchmove');
+            });
+
+            // Permitir scroll en Select2 dropdown
+            $(document).on('select2:opening', function() {
+                // Desactivar enfoque forzado de Modal cuando Select2 abre
+                $.fn.modal.Constructor.prototype._enforceFocus = function() {};
+                $.fn.modal.Constructor.prototype.focus = function() {};
+            });
+
+            // Restaurar enfoque de Modal cuando Select2 cierra
+            $(document).on('select2:closing', function() {
+                // Restaurar comportamiento normal
+                delete $.fn.modal.Constructor.prototype._enforceFocus;
+                delete $.fn.modal.Constructor.prototype.focus;
+            });
+
+            // Permitir scroll con rueda del ratón
+            $('#pecosaModal').on('wheel', function(e) {
+                let $this = $(this);
+                let scrollTop = $this.scrollTop();
+                let scrollHeight = $this.get(0).scrollHeight;
+                let height = $this.height();
+                let delta = (e.originalEvent || e).deltaY;
+                
+                // Permitir scroll natural
+                e.stopPropagation();
+            });
 
             // Event listeners
             $('#cuadrilla_id').on('change', function() {
@@ -1099,10 +1213,17 @@
                 setTimeout(() => {
                     $('#empleado_id').val(pecosa.cuadrilla_empleado_id).trigger('change');
                     
+                    // Esperar a que cargarNeaDetalles() complete y refresque Select2
                     setTimeout(() => {
-                        // Cargar detalles
-                        $('#detallesPecosaTbody').html('');
-                        detalleCounterPecosa = 0;
+                        // Refrescar Select2 para formNeaDetalle después de cargar detalles
+                        $('#formNeaDetalle').select2({
+                            dropdownParent: $('#pecosaModal')
+                        });
+                        
+                        setTimeout(() => {
+                            // Cargar detalles
+                            $('#detallesPecosaTbody').html('');
+                            detalleCounterPecosa = 0;
 
                         if (pecosa.detalles && pecosa.detalles.length > 0) {
                             pecosa.detalles.forEach(d => {
@@ -1256,6 +1377,7 @@
                         
                         $('#pecosaModal').modal('show');
                     }, 300);
+                    }, 500);  // Esperar a que cargarNeaDetalles() complete
                 }, 300);
             }).fail(function(xhr) {
                 console.error('Error al cargar PECOSA:', xhr);

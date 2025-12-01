@@ -156,10 +156,25 @@
                                 @endforeach
                             </select>
                         </div>
+                    </div>
+
+                    <div class="row">
                         <div class="col-md-4 mb-3">
-                            <label for="ubigeo_id" class="form-label">Ubigeo</label>
-                            <select class="form-control select2" id="ubigeo_id" name="ubigeo_id">
-                                <option value="">Seleccione</option>
+                            <label for="departamento_id" class="form-label">Departamento</label>
+                            <select class="form-control select2" id="departamento_id" name="departamento_id">
+                                <option value="">Seleccione un departamento</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="provincia_id" class="form-label">Provincia</label>
+                            <select class="form-control select2" id="provincia_id" name="provincia_id" disabled>
+                                <option value="">Seleccione una provincia</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="ubigeo_id" class="form-label">Distrito</label>
+                            <select class="form-control select2" id="ubigeo_id" name="ubigeo_id" disabled>
+                                <option value="">Seleccione un distrito</option>
                             </select>
                         </div>
                     </div>
@@ -324,25 +339,101 @@
             });
     }
 
-    // Carga dinámica de ubigeos
-    function loadUbigeos(selectedId = null) {
-        return $.get('{{ route('ubigeo.select') }}')
+    // Carga dinámica de departamentos
+    function loadDepartamentos() {
+        return $.get('{{ route('empleado.departamentos') }}')
             .done(function(data) {
-                var select = $('#ubigeo_id');
+                var select = $('#departamento_id');
                 select.empty().append('<option value="">Seleccione</option>');
                 $.each(data, function(index, item) {
-                    select.append(`<option value="${item.id}" ${selectedId == item.id ? 'selected' : ''}>${item.text}</option>`);
+                    select.append(`<option value="${item.id}">${item.text}</option>`);
                 });
                 // Re-inicializar Select2 después de cargar opciones
                 select.select2({
                     dropdownParent: $('#empleadoModal'),
-                    placeholder: 'Seleccione un ubigeo',
+                    placeholder: 'Seleccionar departamento',
                     allowClear: true,
                     language: { noResults: function() { return 'No hay resultados'; } }
                 });
             })
             .fail(function() {
-                console.error('Error al cargar ubigeos');
+                console.error('Error al cargar departamentos');
+            });
+    }
+
+    function loadProvincias(departamentoId) {
+        if (!departamentoId) {
+            $('#provincia_id').empty().append('<option value="">Seleccione</option>').prop('disabled', true).select2({
+                dropdownParent: $('#empleadoModal'),
+                placeholder: 'Seleccionar provincia',
+                allowClear: true,
+                language: { noResults: function() { return 'No hay resultados'; } }
+            });
+            $('#ubigeo_id').empty().append('<option value="">Seleccione</option>').prop('disabled', true).select2({
+                dropdownParent: $('#empleadoModal'),
+                placeholder: 'Seleccionar distrito',
+                allowClear: true,
+                language: { noResults: function() { return 'No hay resultados'; } }
+            });
+            return;
+        }
+
+        return $.get('{{ route('empleado.provincias', ':id') }}'.replace(':id', departamentoId))
+            .done(function(data) {
+                var select = $('#provincia_id');
+                select.empty().append('<option value="">Seleccione</option>');
+                $.each(data, function(index, item) {
+                    select.append(`<option value="${item.id}">${item.text}</option>`);
+                });
+                select.prop('disabled', false);
+                // Re-inicializar Select2 después de cargar opciones
+                select.select2({
+                    dropdownParent: $('#empleadoModal'),
+                    placeholder: 'Seleccionar provincia',
+                    allowClear: true,
+                    language: { noResults: function() { return 'No hay resultados'; } }
+                });
+                $('#ubigeo_id').empty().append('<option value="">Seleccione</option>').prop('disabled', true).select2({
+                    dropdownParent: $('#empleadoModal'),
+                    placeholder: 'Seleccionar distrito',
+                    allowClear: true,
+                    language: { noResults: function() { return 'No hay resultados'; } }
+                });
+            })
+            .fail(function() {
+                console.error('Error al cargar provincias');
+            });
+    }
+
+    function loadDistritos(provinciaId) {
+        if (!provinciaId) {
+            $('#ubigeo_id').empty().append('<option value="">Seleccione</option>').prop('disabled', true).select2({
+                dropdownParent: $('#empleadoModal'),
+                placeholder: 'Seleccionar distrito',
+                allowClear: true,
+                language: { noResults: function() { return 'No hay resultados'; } }
+            });
+            return;
+        }
+
+        return $.get('{{ route('empleado.distritos', ':id') }}'.replace(':id', provinciaId))
+            .done(function(data) {
+                var select = $('#ubigeo_id');
+                select.empty().append('<option value="">Seleccione</option>');
+                $.each(data, function(index, item) {
+                    select.append(`<option value="${item.id}">${item.text}</option>`);
+                });
+                select.prop('disabled', false);
+                // Re-inicializar Select2 después de cargar opciones
+                select.select2({
+                    dropdownParent: $('#empleadoModal'),
+                    placeholder: 'Seleccionar distrito',
+                    allowClear: true,
+                    language: { noResults: function() { return 'No hay resultados'; } }
+                });
+            })
+            .fail(function() {
+                console.error('Error al cargar distritos');
             });
     }
 
@@ -420,8 +511,20 @@
                 return value.trim() !== '' && !$opt.is(':disabled');
             });
         });
+        $('#departamento_id').on('blur change', function() {
+            validateField($(this), 'Seleccione un departamento válido', function(value) {
+                var $opt = $('#departamento_id option:selected');
+                return value.trim() !== '' && !$opt.is(':disabled');
+            });
+        });
+        $('#provincia_id').on('blur change', function() {
+            validateField($(this), 'Seleccione una provincia válida', function(value) {
+                var $opt = $('#provincia_id option:selected');
+                return value.trim() !== '' && !$opt.is(':disabled');
+            });
+        });
         $('#ubigeo_id').on('blur change', function() {
-            validateField($(this), 'Seleccione un ubigeo válido', function(value) {
+            validateField($(this), 'Seleccione un distrito válido', function(value) {
                 var $opt = $('#ubigeo_id option:selected');
                 return value.trim() !== '' && !$opt.is(':disabled');
             });
@@ -433,7 +536,7 @@
         });
 
         // Limpiar error al enfocar
-        $('#nombre, #apellido, #dni, #telefono, #email, #direccion, #cargo_id, #area_id, #ubigeo_id, #estado').on('focus', function() {
+        $('#nombre, #apellido, #dni, #telefono, #email, #direccion, #cargo_id, #area_id, #departamento_id, #provincia_id, #ubigeo_id, #estado').on('focus', function() {
             $(this).removeClass('is-invalid');
             $(this).next('.invalid-feedback').remove();
         });
@@ -490,7 +593,21 @@
             isValid = false;
             if (!firstErrorField) firstErrorField = $('#area_id');
         }
-        if (!validateField($('#ubigeo_id'), 'Seleccione un ubigeo válido', function(value) {
+        if (!validateField($('#departamento_id'), 'Seleccione un departamento válido', function(value) {
+            var $opt = $('#departamento_id option:selected');
+            return value.trim() !== '' && !$opt.is(':disabled');
+        })) {
+            isValid = false;
+            if (!firstErrorField) firstErrorField = $('#departamento_id');
+        }
+        if (!validateField($('#provincia_id'), 'Seleccione una provincia válida', function(value) {
+            var $opt = $('#provincia_id option:selected');
+            return value.trim() !== '' && !$opt.is(':disabled');
+        })) {
+            isValid = false;
+            if (!firstErrorField) firstErrorField = $('#provincia_id');
+        }
+        if (!validateField($('#ubigeo_id'), 'Seleccione un distrito válido', function(value) {
             var $opt = $('#ubigeo_id option:selected');
             return value.trim() !== '' && !$opt.is(':disabled');
         })) {
@@ -527,12 +644,36 @@
             allowClear: true,
             language: { noResults: function() { return 'No hay resultados'; } }
         });
-        $('#ubigeo_id').select2({
+        $('#departamento_id').select2({
             dropdownParent: $('#empleadoModal'),
-            placeholder: 'Seleccione un ubigeo',
+            placeholder: 'Seleccionar departamento',
             allowClear: true,
             language: { noResults: function() { return 'No hay resultados'; } }
         });
+        $('#provincia_id').select2({
+            dropdownParent: $('#empleadoModal'),
+            placeholder: 'Seleccionar provincia',
+            allowClear: true,
+            language: { noResults: function() { return 'No hay resultados'; } }
+        });
+        $('#ubigeo_id').select2({
+            dropdownParent: $('#empleadoModal'),
+            placeholder: 'Seleccionar distrito',
+            allowClear: true,
+            language: { noResults: function() { return 'No hay resultados'; } }
+        });
+
+        // Event listeners para cascada de ubigeo
+        $('#departamento_id').on('change', function() {
+            var departamentoId = $(this).val();
+            loadProvincias(departamentoId);
+        });
+
+        $('#provincia_id').on('change', function() {
+            var provinciaId = $(this).val();
+            loadDistritos(provinciaId);
+        });
+
         var table = $('#empleadosTable').DataTable({
             processing: true,
             serverSide: true,
@@ -585,7 +726,7 @@
         // Cargar todos los selects dinámicamente al inicializar
         loadCargos();
         loadAreas();
-        loadUbigeos();
+        loadDepartamentos();
         setupFormValidation();
 
         // Si el usuario cambia el select y la opción es inactiva, eliminarla y mostrar placeholder
@@ -617,11 +758,13 @@
             $('#empleadoModalLabel').text('Nuevo Empleado');
             loadCargos();
             loadAreas();
-            loadUbigeos();
+            loadDepartamentos();
             // Limpiar selects y mostrar placeholder
             setTimeout(function() {
                 $('#cargo_id').val('').trigger('change');
                 $('#area_id').val('').trigger('change');
+                $('#departamento_id').val('').trigger('change');
+                $('#provincia_id').val('').trigger('change');
                 $('#ubigeo_id').val('').trigger('change');
             }, 200);
             setupFormValidation();
@@ -691,6 +834,9 @@
 
         $('#empleadoModal').on('hidden.bs.modal', function () {
             $('#empleadoForm')[0].reset();
+            $('#departamento_id').val('');
+            $('#provincia_id').prop('disabled', true).empty().append('<option value="">Seleccione una provincia</option>');
+            $('#ubigeo_id').prop('disabled', true).empty().append('<option value="">Seleccione un distrito</option>');
             $('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
             $('.invalid-feedback').remove();
         });
@@ -749,22 +895,53 @@
                 }
             });
             
-            // Cargar ubigeos y manejar selección
-            loadUbigeos(data.ubigeo_id).done(function() {
-                var ubigeoVal = data.ubigeo_id ? data.ubigeo_id.toString() : '';
-                if ($('#ubigeo_id option[value="'+ubigeoVal+'"], #ubigeo_id option[value='+ubigeoVal+']').length > 0) {
-                    $('#ubigeo_id').val(ubigeoVal).trigger('change.select2');
-                } else if (ubigeoVal) {
-                    var nombreUbigeo = data.ubigeo && data.ubigeo.nombre ? data.ubigeo.nombre + ' (inactivo)' : 'Inactivo';
-                    $('#ubigeo_id').append('<option value="'+ubigeoVal+'" selected>'+nombreUbigeo+'</option>');
-                    $('#ubigeo_id').val(ubigeoVal).trigger('change.select2');
-                    setTimeout(function(){
-                        $('#ubigeo_id option[value="'+ubigeoVal+'"]').prop('disabled', true);
-                    }, 0);
-                } else {
-                    $('#ubigeo_id').val('').trigger('change.select2');
-                }
-            });
+            // Cargar cascada de ubigeo y manejar selección
+            if (data.ubigeo_id) {
+                $.get('/empleados/ubigeo-jerarquia/' + data.ubigeo_id, function(hierarquia) {
+                    if (hierarquia.success) {
+                        // Cargar departamentos
+                        $.get('{{ route('empleado.departamentos') }}', function(departamentos) {
+                            $('#departamento_id').empty().append('<option value="">Seleccione un departamento</option>');
+                            $.each(departamentos, function(index, item) {
+                                $('#departamento_id').append(`<option value="${item.id}">${item.text}</option>`);
+                            });
+                            
+                            // Seleccionar el departamento
+                            if (hierarquia.departamento_id) {
+                                $('#departamento_id').val(hierarquia.departamento_id);
+                                
+                                // Cargar provincias después de seleccionar departamento
+                                $.get('{{ route('empleado.provincias', ':id') }}'.replace(':id', hierarquia.departamento_id), function(provincias) {
+                                    $('#provincia_id').empty().append('<option value="">Seleccione una provincia</option>');
+                                    $.each(provincias, function(index, item) {
+                                        $('#provincia_id').append(`<option value="${item.id}">${item.text}</option>`);
+                                    });
+                                    $('#provincia_id').prop('disabled', false);
+                                    
+                                    // Seleccionar la provincia
+                                    if (hierarquia.provincia_id) {
+                                        $('#provincia_id').val(hierarquia.provincia_id);
+                                        
+                                        // Cargar distritos después de seleccionar provincia
+                                        $.get('{{ route('empleado.distritos', ':id') }}'.replace(':id', hierarquia.provincia_id), function(distritos) {
+                                            $('#ubigeo_id').empty().append('<option value="">Seleccione un distrito</option>');
+                                            $.each(distritos, function(index, item) {
+                                                $('#ubigeo_id').append(`<option value="${item.id}">${item.text}</option>`);
+                                            });
+                                            $('#ubigeo_id').prop('disabled', false);
+                                            
+                                            // Seleccionar el distrito
+                                            $('#ubigeo_id').val(hierarquia.distrito_id);
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+            } else {
+                loadDepartamentos();
+            }
             
             if (data.estado == 1) {
                 $('#estado').prop('checked', true);

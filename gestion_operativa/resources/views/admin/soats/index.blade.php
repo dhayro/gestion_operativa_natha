@@ -2,6 +2,8 @@
 
 @section('styles')
     <link rel="stylesheet" href="{{asset('plugins/src/table/datatable/datatables.css')}}">
+    <link rel="stylesheet" href="{{asset('plugins/src/sweetalerts2/sweetalerts2.css')}}">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <style>
         .modal-content { background: #fff !important; }
         .full-height-row { min-height: 75vh; display: flex; align-items: stretch; }
@@ -11,6 +13,20 @@
         .badge-danger { background-color: #e74c3c !important; color: white !important; }
         .badge-warning { background-color: #f39c12 !important; color: white !important; }
         .badge-secondary { background-color: #6c757d !important; color: white !important; }
+        
+        /* Select2 styling */
+        .select2-container .select2-selection--single {
+            height: 38px !important;
+            border: 1px solid #bfc9d4 !important;
+            border-radius: 6px !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 36px !important;
+            padding-left: 12px !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 36px !important;
+        }
     </style>
 @endsection
 
@@ -62,6 +78,7 @@
             <form id="soatForm" action="" method="POST">
                 @csrf
                 <input type="hidden" id="soat_id" name="soat_id">
+                <input type="hidden" id="vehiculo_id_hidden" name="vehiculo_id">
                 <div class="modal-header">
                     <h5 class="modal-title" id="soatModalLabel">Crear/Editar SOAT</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -70,13 +87,13 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="vehiculo_id" class="form-label">Vehículo <span class="text-danger">*</span></label>
-                            <select class="form-control" id="vehiculo_id" name="vehiculo_id" required>
+                            <select class="form-control select2" id="vehiculo_id" required>
                                 <option value="">Seleccione un vehículo</option>
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="proveedor_id" class="form-label">Proveedor <span class="text-danger">*</span></label>
-                            <select class="form-control" id="proveedor_id" name="proveedor_id" required>
+                            <select class="form-control select2" id="proveedor_id" name="proveedor_id" required>
                                 <option value="">Seleccione un proveedor</option>
                             </select>
                         </div>
@@ -119,11 +136,107 @@
 
 @section('scripts')
     <script src="{{asset('plugins/src/table/datatable/datatables.js')}}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="{{asset('plugins/src/sweetalerts2/sweetalerts2.min.js')}}"></script>
     <script>
+    let soatsTable = null;
+
     $(document).ready(function() {
         console.log('✅ Scripts cargados - Inicializando tabla de SOATs');
         
-        var table = $('#soatsTable').DataTable({
+        // Inicializar Select2
+        $('#vehiculo_id').select2({
+            dropdownParent: $('#soatModal'),
+            placeholder: 'Seleccione un vehículo',
+            allowClear: true
+        });
+        
+        $('#proveedor_id').select2({
+            dropdownParent: $('#soatModal'),
+            placeholder: 'Seleccione un proveedor',
+            allowClear: true
+        });
+        
+        // Cargar vehículos sin SOAT
+        loadVehiculos();
+        loadProveedores();
+        
+        // Cargar tabla de SOATs
+        loadSoatsTable();
+        
+        // Evento del botón Nuevo SOAT
+        $('#btnNuevoSoat').click(function() {
+            $('#soatForm')[0].reset();
+            $('#soat_id').val('');
+            $('#soatModalLabel').text('Nuevo SOAT');
+            $('#vehiculo_id').prop('disabled', false); // Habilitar cuando es nuevo
+            loadVehiculos();
+            loadProveedores();
+        });
+        
+        // Submit del formulario
+        $('#soatForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            // Sincronizar vehiculo_id del select al campo oculto antes de enviar
+            $('#vehiculo_id_hidden').val($('#vehiculo_id').val());
+            
+            const soatId = $('#soat_id').val();
+            const url = soatId ? '/soats/' + soatId : '/soats';
+            const method = soatId ? 'PUT' : 'POST';
+            
+            Swal.fire({
+                title: 'Guardando...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+            
+            $.ajax({
+                url: url,
+                type: method,
+                data: $(this).serialize(),
+                success: function(res) {
+                    Swal.fire('¡Guardado!', 'El SOAT se guardó correctamente', 'success');
+                    $('#soatModal').modal('hide');
+                    $('#soatForm')[0].reset();
+                    loadSoatsTable();
+                },
+                error: function(xhr) {
+                    Swal.fire('Error', 'Hubo un problema al guardar el SOAT', 'error');
+                }
+            });
+        });
+    });
+
+    function loadVehiculos() {
+        $.get('{{ route('soats.vehiculos.sin-soat') }}', function(data) {
+            const select = $('#vehiculo_id');
+            select.empty().append('<option value="">Seleccione un vehículo</option>');
+            $.each(data, function(index, item) {
+                const claseEstado = item.estado === 'sin_soat' ? ' (⚠️ Sin SOAT)' : ' (✅)';
+                select.append(`<option value="${item.id}">${item.text}</option>`);
+            });
+            select.trigger('change');
+        });
+    }
+
+    function loadProveedores() {
+        $.get('{{ route('soats.proveedores') }}', function(data) {
+            const select = $('#proveedor_id');
+            select.empty().append('<option value="">Seleccione un proveedor</option>');
+            $.each(data, function(index, item) {
+                select.append(`<option value="${item.id}">${item.text}</option>`);
+            });
+            select.trigger('change');
+        });
+    }
+
+    function loadSoatsTable() {
+        if ($.fn.DataTable.isDataTable('#soatsTable')) {
+            $('#soatsTable').DataTable().destroy();
+        }
+        
+        soatsTable = $('#soatsTable').DataTable({
             processing: true,
             serverSide: true,
             responsive: true,
@@ -145,7 +258,7 @@
             ],
             pageLength: 25,
             lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
-            order: [[5, "desc"]],
+            order: [[6, "asc"]],
             columnDefs: [
                 { targets: [6, 7, 8], className: "text-center" }
             ],
@@ -166,8 +279,71 @@
                 }
             }
         });
+    }
+
+    window.editSoat = function(id) {
+        $.get('/soats/' + id, function(data) {
+            $('#soat_id').val(data.id);
+            
+            // Cargar datos del vehículo y deshabilitarlo
+            const vehiculoInfo = data.vehiculo.marca + ' ' + data.vehiculo.nombre + ' (' + data.vehiculo.placa + ')';
+            $('#vehiculo_id').html('<option value="' + data.vehiculo_id + '">' + vehiculoInfo + '</option>')
+                .val(data.vehiculo_id)
+                .prop('disabled', true) // Deshabilitar vehículo en edición
+                .trigger('change');
+            
+            $('#proveedor_id').val(data.proveedor_id).trigger('change');
+            $('#numero_soat').val(data.numero_soat);
+            $('#fecha_emision').val(data.fecha_emision);
+            $('#fecha_vencimiento').val(data.fecha_vencimiento);
+            $('#estado').prop('checked', data.estado ? true : false);
+            
+            $('#soatModalLabel').text('Editar SOAT');
+            $('#soatModal').modal('show');
+        });
+    };
+
+    window.deleteSoat = function(id) {
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: 'Esta acción no se puede deshacer',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: '/soats/' + id,
+                    type: 'DELETE',
+                    data: { _token: '{{ csrf_token() }}' },
+                    success: function() {
+                        Swal.fire('¡Eliminado!', 'El SOAT se eliminó correctamente', 'success');
+                        loadSoatsTable();
+                    },
+                    error: function() {
+                        Swal.fire('Error', 'No se pudo eliminar el SOAT', 'error');
+                    }
+                });
+            }
+        });
+    };
+
+    window.agregarSoat = function(vehiculoId) {
+        $('#soatForm')[0].reset();
+        $('#soat_id').val('');
         
-        console.log('✅ DataTable de SOATs cargado');
-    });
+        // Cargar todos los vehículos pero preseleccionar el especificado y deshabilitarlo
+        loadVehiculos();
+        
+        setTimeout(function() {
+            $('#vehiculo_id').val(vehiculoId).trigger('change').prop('disabled', true);
+        }, 500); // Pequeño delay para asegurar que Select2 está listo
+        
+        $('#soatModalLabel').text('Agregar SOAT al Vehículo');
+        $('#soatModal').modal('show');
+    };
     </script>
 @endsection

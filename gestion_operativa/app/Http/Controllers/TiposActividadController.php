@@ -102,10 +102,7 @@ class TiposActividadController extends Controller
     public function show($id)
     {
         $tiposActividad = TiposActividad::findOrFail($id);
-        return response()->json([
-            'success' => true,
-            'data' => $tiposActividad
-        ]);
+        return response()->json($tiposActividad);
     }
 
     public function update(Request $request, $id)

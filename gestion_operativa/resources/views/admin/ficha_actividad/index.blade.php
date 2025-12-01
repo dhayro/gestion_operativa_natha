@@ -36,6 +36,31 @@
             color: #212529 !important;
         }
 
+        /* Google Places Autocomplete styling */
+        .pac-container {
+            z-index: 10000 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        
+        .pac-item {
+            padding: 8px 10px !important;
+            cursor: pointer;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .pac-item:hover {
+            background-color: #f0f0f0 !important;
+        }
+        
+        .pac-item-selected {
+            background-color: #1abc9c !important;
+            color: white;
+        }
+        
+        .pac-matched {
+            font-weight: bold;
+        }
+
         .tab-section-title {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -58,6 +83,37 @@
             height: 80px;
             margin-bottom: 20px;
             opacity: 0.5;
+        }
+
+        /* Estilos para modal scroll */
+        #fichaModal .modal-body {
+            max-height: calc(100vh - 250px);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        /* Prevenir que Select2 interfiera con el scroll */
+        #fichaModal .modal-body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #fichaModal .modal-body::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        #fichaModal .modal-body::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        #fichaModal .modal-body::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Asegurar que Select2 se abre correctamente en el modal con scroll */
+        #fichaModal .select2-dropdown {
+            z-index: 1050 !important;
         }
     </style>
 @endsection
@@ -251,7 +307,8 @@
                             <div class="row">
                                 <div class="col-md-12 mb-3">
                                     <label for="direccion" class="form-label">🏠 Dirección</label>
-                                    <input type="text" class="form-control" id="direccion" name="direccion" placeholder="Dirección completa">
+                                    <input type="text" class="form-control" id="direccion" name="direccion" placeholder="Escribe la calle, avenida o lugar (Google Places Autocomplete)">
+                                    <small class="form-text text-muted">Escribe la dirección y selecciona de las sugerencias</small>
                                 </div>
                             </div>
 
@@ -586,6 +643,11 @@
                             <label class="btn btn-outline-primary" for="tipo_archivo">
                                 📁 Archivo Local
                             </label>
+
+                            <input type="radio" class="btn-check" name="tipo_origen" id="tipo_camara" value="camara">
+                            <label class="btn btn-outline-primary" for="tipo_camara">
+                                📷 Cámara
+                            </label>
                         </div>
                     </div>
 
@@ -602,6 +664,14 @@
                         <input type="file" class="form-control" id="foto_archivo" accept="image/jpeg,image/png,image/gif,image/webp">
                         <small class="form-text text-muted">Formatos permitidos: JPG, PNG, GIF, WebP | Máximo: 30 MB</small>
                         <div id="preview" class="mt-3"></div>
+                    </div>
+
+                    <!-- Entrada de Cámara (mostrar solo cuando tipo_origen == 'camara') -->
+                    <div id="camaraInput" class="mb-3" style="display:none;">
+                        <label for="foto_camara" class="form-label">Capturar Foto con Cámara <span class="text-danger">*</span></label>
+                        <input type="file" class="form-control" id="foto_camara" accept="image/*" capture="environment">
+                        <small class="form-text text-muted">📱 Abre la cámara de tu dispositivo | Usa la cámara trasera (environment) o delantera (user)</small>
+                        <div id="previewCamara" class="mt-3"></div>
                     </div>
 
                     <!-- Descripción común -->
@@ -654,6 +724,7 @@
     let fichaMap;
     let fichaMapMarker = null;
     let evitarGuardoAutomatico = false; // Flag para prevenir guardos accidentales
+    let autocompletePlaceFicha; // Variable para Google Places Autocomplete
 
     $(document).ready(function() {
         inicializarTabla();
@@ -1132,22 +1203,56 @@
     }
 
     function reconstruirSelectorMultinivel(actividadId) {
+        console.log('🔍 Reconstruyendo selector para actividadId:', actividadId);
+        
         // Obtener los datos de la actividad seleccionada y su jerarquía
         $.get(`/tipos-actividad/${actividadId}`, function(tipoData) {
-            const tipo = tipoData.data;
+            console.log('📥 Respuesta de /tipos-actividad/' + actividadId + ':', tipoData);
+            
+            // Aceptar ambos formatos: {data: {...}} o directamente {...}
+            const tipo = (tipoData && tipoData.data) ? tipoData.data : tipoData;
+            
+            // Validar que la respuesta tenga la estructura correcta
+            if (!tipo || !tipo.id) {
+                console.error('❌ Error: Respuesta inválida de /tipos-actividad/' + actividadId, tipoData);
+                return;
+            }
+            
+            console.log('📦 Tipo de actividad cargado:', tipo);
+            
             const ruta = []; // Array para guardar la ruta hasta el ID final
 
             // Función para construir la ruta desde el padre hasta el ID actual
             function construirRuta(tipoActual, callback) {
+                // Validar que tipoActual existe y tiene id
+                if (!tipoActual || !tipoActual.id) {
+                    console.error('❌ Error: tipoActual es undefined o no tiene id', tipoActual);
+                    callback();
+                    return;
+                }
+
+                console.log('🔗 Agregando a ruta:', tipoActual.id, 'dependencia:', tipoActual.dependencia_id);
                 ruta.unshift(tipoActual.id); // Agregar al inicio del array
 
                 if (tipoActual.dependencia_id) {
                     // Obtener el padre
                     $.get(`/tipos-actividad/${tipoActual.dependencia_id}`, function(padreData) {
-                        construirRuta(padreData.data, callback);
+                        // Aceptar ambos formatos
+                        const padre = (padreData && padreData.data) ? padreData.data : padreData;
+                        
+                        if (padre && padre.id) {
+                            construirRuta(padre, callback);
+                        } else {
+                            console.error('❌ Error: No se recibieron datos del padre', padreData);
+                            callback();
+                        }
+                    }).fail(function(xhr) {
+                        console.error('❌ Error al obtener padre:', xhr);
+                        callback();
                     });
                 } else {
                     // Llegamos a la raíz
+                    console.log('✅ Ruta completa construida:', ruta);
                     callback();
                 }
             }
@@ -1166,6 +1271,11 @@
                     });
                 }, 100);
             });
+        }).fail(function(xhr) {
+            console.error('❌ Error al obtener tipo de actividad:', xhr);
+            console.error('URL:', `/tipos-actividad/${actividadId}`);
+            console.error('Status:', xhr.status);
+            console.error('Response:', xhr.responseText);
         });
     }
 
@@ -1321,8 +1431,18 @@
                 html = '<div class="row">';
                 $.each(response.data, function(i, item) {
                     // Determinar el icono según el tipo de origen
-                    const tipoIcon = item.tipo_origen === 'url' ? '🌐' : '📁';
-                    const tipoLabel = item.tipo_origen === 'url' ? 'URL' : 'Archivo';
+                    let tipoIcon = '';
+                    let tipoLabel = '';
+                    if (item.tipo_origen === 'url') {
+                        tipoIcon = '🌐';
+                        tipoLabel = 'URL';
+                    } else if (item.tipo_origen === 'archivo') {
+                        tipoIcon = '📁';
+                        tipoLabel = 'Archivo';
+                    } else if (item.tipo_origen === 'camara') {
+                        tipoIcon = '📷';
+                        tipoLabel = 'Cámara';
+                    }
                     
                     html += `<div class="col-md-4 mb-3">
                         <div class="card h-100 shadow-sm">
@@ -1335,7 +1455,7 @@
                                 <div class="text-muted small mb-2">
                                     <div>👤 ${item.usuario_creacion?.nombre || 'Desconocido'}</div>
                                     <div>📅 ${item.fecha_formateada || '-'}</div>
-                                    ${item.tipo_origen === 'archivo' ? `<div>💾 ${item.tamaño_formateado}</div>` : ''}
+                                    ${item.tipo_origen === 'archivo' || item.tipo_origen === 'camara' ? `<div>💾 ${item.tamaño_formateado}</div>` : ''}
                                 </div>
                                 <div class="btn-group btn-group-sm w-100" role="group">
                                     <button class="btn btn-outline-primary btn-sm flex-fill" onclick="editarFoto(${fichaId}, ${item.id})" title="Editar">✏️ Editar</button>
@@ -1405,9 +1525,11 @@
         // Mostrar solo URL input
         document.getElementById('urlInput').style.display = 'block';
         document.getElementById('archivoInput').style.display = 'none';
+        document.getElementById('camaraInput').style.display = 'none';
         document.getElementById('infoUrl').style.display = 'block';
         document.getElementById('infoArchivo').style.display = 'none';
         document.getElementById('preview').innerHTML = '';
+        document.getElementById('previewCamara').innerHTML = '';
         
         // Resetear botón a estado inicial
         const btnGuardar = document.querySelector('button[onclick="guardarFoto()"]');
@@ -1967,29 +2089,37 @@
             const tipoOrigen = this.value;
             const urlInput = document.getElementById('urlInput');
             const archivoInput = document.getElementById('archivoInput');
+            const camaraInput = document.getElementById('camaraInput');
             const infoUrl = document.getElementById('infoUrl');
             const infoArchivo = document.getElementById('infoArchivo');
 
+            // Ocultar todos primero
+            urlInput.style.display = 'none';
+            archivoInput.style.display = 'none';
+            camaraInput.style.display = 'none';
+            infoUrl.style.display = 'none';
+            infoArchivo.style.display = 'none';
+
             if (tipoOrigen === 'url') {
-                // Mostrar URL, ocultar archivo
+                // Mostrar URL
                 urlInput.style.display = 'block';
-                archivoInput.style.display = 'none';
                 infoUrl.style.display = 'block';
-                infoArchivo.style.display = 'none';
-                
-                // Actualizar atributo required
                 document.getElementById('foto_url').required = true;
                 document.getElementById('foto_archivo').required = false;
-            } else {
-                // Mostrar archivo, ocultar URL
-                urlInput.style.display = 'none';
+                document.getElementById('foto_camara').required = false;
+            } else if (tipoOrigen === 'archivo') {
+                // Mostrar archivo
                 archivoInput.style.display = 'block';
-                infoUrl.style.display = 'none';
                 infoArchivo.style.display = 'block';
-                
-                // Actualizar atributo required
                 document.getElementById('foto_url').required = false;
                 document.getElementById('foto_archivo').required = true;
+                document.getElementById('foto_camara').required = false;
+            } else if (tipoOrigen === 'camara') {
+                // Mostrar cámara
+                camaraInput.style.display = 'block';
+                document.getElementById('foto_url').required = false;
+                document.getElementById('foto_archivo').required = false;
+                document.getElementById('foto_camara').required = true;
             }
         });
     });
@@ -2007,6 +2137,24 @@
         }
     });
 
+    // ===== PREVIEW DE CÁMARA AL CAPTURAR =====
+    document.getElementById('foto_camara')?.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                let preview = document.getElementById('previewCamara');
+                preview.innerHTML = `
+                    <div class="alert alert-success d-flex align-items-center">
+                        <span class="me-2">✅ Foto capturada exitosamente</span>
+                    </div>
+                    <img src="${event.target.result}" alt="Foto Cámara" style="max-width: 200px; max-height: 200px; border-radius: 4px; margin-top: 10px; border: 2px solid #28a745;">
+                `;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
     function guardarFoto() {
         const tipoOrigen = document.querySelector('input[name="tipo_origen"]:checked').value;
         const descripcion = $('#foto_descripcion').val();
@@ -2019,7 +2167,7 @@
                 return;
             }
             enviarFoto({ url, descripcion, tipo_origen: tipoOrigen });
-        } else {
+        } else if (tipoOrigen === 'archivo') {
             const archivo = document.getElementById('foto_archivo').files[0];
             if (!archivo) {
                 Swal.fire('Error', 'Selecciona un archivo de foto', 'error');
@@ -2035,6 +2183,18 @@
             if (archivo.size > MAX_SIZE) {
                 const sizeInMB = Math.round(archivo.size / (1024 * 1024));
                 Swal.fire('Error', `La imagen no debe exceder 30MB. Archivo: ${sizeInMB}MB`, 'error');
+                return;
+            }
+            enviarFotoConArchivo(archivo, descripcion, tipoOrigen);
+        } else if (tipoOrigen === 'camara') {
+            const archivo = document.getElementById('foto_camara').files[0];
+            if (!archivo) {
+                Swal.fire('Error', 'Captura una foto con la cámara', 'error');
+                return;
+            }
+            // Validar tipo de archivo
+            if (!archivo.type.startsWith('image/')) {
+                Swal.fire('Error', 'El archivo debe ser una imagen', 'error');
                 return;
             }
             enviarFotoConArchivo(archivo, descripcion, tipoOrigen);
@@ -2309,19 +2469,29 @@
             // Rellenar el formulario con los datos actuales
             document.querySelector('input[name="tipo_origen"][value="' + foto.tipo_origen + '"]').checked = true;
             
+            // Ocultar todos los inputs primero
+            document.getElementById('urlInput').style.display = 'none';
+            document.getElementById('archivoInput').style.display = 'none';
+            document.getElementById('camaraInput').style.display = 'none';
+            document.getElementById('infoUrl').style.display = 'none';
+            document.getElementById('infoArchivo').style.display = 'none';
+            
             if (foto.tipo_origen === 'url') {
                 document.getElementById('foto_url').value = foto.url;
                 document.getElementById('urlInput').style.display = 'block';
-                document.getElementById('archivoInput').style.display = 'none';
                 document.getElementById('infoUrl').style.display = 'block';
-                document.getElementById('infoArchivo').style.display = 'none';
-            } else {
+            } else if (foto.tipo_origen === 'archivo') {
                 document.getElementById('archivoInput').style.display = 'block';
-                document.getElementById('urlInput').style.display = 'none';
-                document.getElementById('infoUrl').style.display = 'none';
                 document.getElementById('infoArchivo').style.display = 'block';
                 // Mostrar foto actual como preview
                 document.getElementById('preview').innerHTML = `<img src="${foto.foto_url}" alt="Preview actual" style="max-width: 200px; max-height: 200px; border-radius: 4px; margin-top: 10px;">`;
+            } else if (foto.tipo_origen === 'camara') {
+                document.getElementById('camaraInput').style.display = 'block';
+                // Mostrar foto actual como preview
+                document.getElementById('previewCamara').innerHTML = `
+                    <div class="alert alert-info">Foto capturada previamente</div>
+                    <img src="${foto.foto_url}" alt="Preview actual" style="max-width: 200px; max-height: 200px; border-radius: 4px; margin-top: 10px; border: 2px solid #17a2b8;">
+                `;
             }
             
             document.getElementById('foto_descripcion').value = foto.descripcion || '';
@@ -2517,23 +2687,112 @@
         fichaMap = new google.maps.Map(document.getElementById('fichaMap'), {
             zoom: 14,
             center: PUCALLPA_CENTER,
-            mapTypeId: 'roadmap'
+            mapTypeId: 'roadmap',
+            gestureHandling: 'greedy'
         });
 
+        // Inicializar Google Places Autocomplete
+        const directionInput = document.getElementById('direccion');
+        autocompletePlaceFicha = new google.maps.places.Autocomplete(directionInput, {
+            componentRestrictions: { country: 'pe' }, // Restringir a Perú
+            types: ['geocode', 'establishment'],
+            fields: ['geometry', 'formatted_address', 'address_components']
+        });
+
+        autocompletePlaceFicha.bindTo('bounds', fichaMap);
+
+        // Listener cuando se selecciona un lugar del autocomplete
+        autocompletePlaceFicha.addListener('place_changed', function() {
+            const place = autocompletePlaceFicha.getPlace();
+
+            if (!place.geometry) {
+                console.log("No geometry found for the selected place");
+                return;
+            }
+
+            // Obtener coordenadas
+            const lat = place.geometry.location.lat();
+            const lng = place.geometry.location.lng();
+
+            // Actualizar inputs de coordenadas
+            $('#latitud').val(lat.toFixed(6));
+            $('#longitud').val(lng.toFixed(6));
+
+            // Actualizar dirección completa
+            $('#direccion').val(place.formatted_address);
+
+            // Eliminar marcador anterior
+            if (fichaMapMarker) {
+                fichaMapMarker.setMap(null);
+            }
+
+            // Crear nuevo marcador
+            fichaMapMarker = new google.maps.Marker({
+                position: { lat: lat, lng: lng },
+                map: fichaMap,
+                title: place.formatted_address,
+                animation: google.maps.Animation.DROP
+            });
+
+            // Info window
+            const infoWindow = new google.maps.InfoWindow({
+                content: `<div style="text-align: center; font-size: 12px;">
+                    <strong>Ubicación</strong><br>
+                    ${place.formatted_address}<br>
+                    <br>
+                    <strong>Coordenadas:</strong><br>
+                    Lat: ${lat.toFixed(6)}<br>
+                    Lng: ${lng.toFixed(6)}
+                </div>`
+            });
+
+            fichaMapMarker.addListener('click', function() {
+                infoWindow.open(fichaMap, fichaMapMarker);
+            });
+
+            infoWindow.open(fichaMap, fichaMapMarker);
+
+            // Centrar y zoom al lugar
+            fichaMap.setCenter({ lat: lat, lng: lng });
+            fichaMap.setZoom(17);
+        });
+
+        // Event listener para click directo en el mapa
         fichaMap.addListener('click', function(event) {
             const lat = event.latLng.lat();
             const lng = event.latLng.lng();
             
+            // Actualizar inputs
             $('#latitud').val(lat.toFixed(6));
             $('#longitud').val(lng.toFixed(6));
             
-            if (fichaMapMarker) fichaMapMarker.setMap(null);
+            // Eliminar marcador anterior
+            if (fichaMapMarker) {
+                fichaMapMarker.setMap(null);
+            }
             
+            // Crear nuevo marcador
             fichaMapMarker = new google.maps.Marker({
                 position: event.latLng,
                 map: fichaMap,
+                title: `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`,
                 animation: google.maps.Animation.DROP
             });
+            
+            // Info window
+            const infoWindow = new google.maps.InfoWindow({
+                content: `<div style="text-align: center;">
+                    <strong>Ubicación de la Actividad</strong><br>
+                    Lat: ${lat.toFixed(6)}<br>
+                    Lng: ${lng.toFixed(6)}
+                </div>`
+            });
+            
+            fichaMapMarker.addListener('click', function() {
+                infoWindow.open(fichaMap, fichaMapMarker);
+            });
+            
+            infoWindow.open(fichaMap, fichaMapMarker);
         });
     }
 

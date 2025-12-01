@@ -2,6 +2,25 @@
 {{-- @extends('layouts.app') --}}
 
 {{-- @section('sidebar') --}}
+<style>
+    .nav-logo .nav-item.theme-logo {
+        background-color: white;
+        border-radius: 8px;
+        padding: 8px;
+        margin-bottom: 8px;
+    }
+    .nav-logo .nav-item.theme-logo img {
+        max-width: 60px;
+        height: auto;
+    }
+    .kong a {
+        font-size: 18px !important;
+        color: #e0e6ed !important;
+        font-weight: 600;
+        line-height: 1.1;
+    }
+</style>
+
 <div class="sidebar-wrapper sidebar-theme">
 
     <nav id="sidebar">
@@ -10,12 +29,12 @@
             <div class="nav-logo">
                 <div class="nav-item theme-logo">
                     <a href="{{getRouterValue()}}dashboard/analytics">
-                        <img src="{{Vite::asset('resources/images/logo.svg')}}" class="logo-light navbar-logo-g" alt="logo">
-                        <img src="{{Vite::asset('resources/images/logo.svg')}}" class="logo-dark navbar-logo-g" alt="logo">
+                        <img src="{{Vite::asset('resources/images/Logo sin fondo.png')}}" class="logo-light navbar-logo-g" alt="logo">
+                        <img src="{{Vite::asset('resources/images/Logo sin fondo.png')}}" class="logo-dark navbar-logo-g" alt="logo">
                     </a>
                 </div>
-                <div class="nav-item theme-text">
-                    <a href="{{getRouterValue()}}dashboard/analytics" class="nav-link"> CORK </a>
+                <div class="kong ">
+                    <a href="{{getRouterValue()}}dashboard/analytics" class="nav-link"> CONTRATISTAS<br>GENERALES </a>
                 </div>
             </div>
             <div class="nav-item sidebar-toggle">
@@ -144,6 +163,11 @@
                     </li>
                     <li class="{{ Request::routeIs('pecosas.index') ? 'active' : '' }}">
                         <a href="{{ route('pecosas.index') }}">PECOSAs</a>
+                    </li>
+                    <li class="{{ Request::routeIs('stock.index') ? 'active' : '' }}">
+                        <a href="{{ route('stock.index') }}">
+                            Consulta de Stock
+                        </a>
                     </li>
                 </ul>
             </li>

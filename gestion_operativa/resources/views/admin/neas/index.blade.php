@@ -389,8 +389,9 @@
                                 <table class="table table-striped table-bordered table-hover table-sm" id="detallesTable">
                                     <thead>
                                         <tr>
-                                            <th style="width: 30%">Material</th>
-                                            <th style="width: 12%">Cantidad</th>
+                                            <th style="width: 25%">Material</th>
+                                            <th style="width: 10%">Unidad</th>
+                                            <th style="width: 10%">Cantidad</th>
                                             <th style="width: 12%">Precio Unit.</th>
                                             <th style="width: 10%">IGV</th>
                                             <th style="width: 15%">Subtotal</th>
@@ -605,6 +606,9 @@
             if (materialId) {
                 $.get('{{ route("neas.getDetallesMaterial", ":id") }}'.replace(':id', materialId), function(data) {
                     $('#formPrecio').val(data.precio_unitario || 0);
+                    // Guardar unidad de medida en un atributo data
+                    $('#formMaterial').data('unidad_medida', data.unidad_medida || '');
+                    $('#formMaterial').data('unidad_medida_nombre', data.unidad_medida_nombre || '');
                 });
             }
         });
@@ -650,8 +654,9 @@
             return;
         }
 
-        // Obtener texto del material seleccionado
+        // Obtener texto del material seleccionado y unidad de medida
         const materialText = $('#formMaterial').find('option:selected').text();
+        const unidadMedida = $('#formMaterial').data('unidad_medida_nombre') || '';
         const subtotal = cantidad * precio;
         const igv = incluye ? subtotal - (subtotal / 1.18) : 0;
 
@@ -662,6 +667,10 @@
                 <td>
                     <small>${materialText}</small>
                     <input type="hidden" class="form-detalle-material-id" value="${materialId}">
+                </td>
+                <td>
+                    <small><strong>${unidadMedida}</strong></small>
+                    <input type="hidden" class="form-detalle-unidad" value="${unidadMedida}">
                 </td>
                 <td>
                     <input type="number" class="form-control form-control-sm form-detalle-cantidad" value="${cantidad.toFixed(3)}" step="0.001" min="0" required>
@@ -888,11 +897,12 @@
 
     window.verNea = function(id) {
         $.get(`/neas/${id}`, function(nea) {
-            let detallesHtml = '<div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>Material</th><th>Código</th><th>Cantidad</th><th>Precio Unit.</th><th>Subtotal</th><th>IGV</th><th>Total</th></tr></thead><tbody>';
+            let detallesHtml = '<div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>Material</th><th>Código</th><th>Unidad</th><th>Cantidad</th><th>Precio Unit.</th><th>Subtotal</th><th>IGV</th><th>Total</th></tr></thead><tbody>';
             
             nea.detalles.forEach(d => {
                 const materialNombre = d.material ? d.material.nombre : 'N/A';
                 const materialCodigo = d.material ? d.material.codigo_material : 'N/A';
+                const unidadMedida = d.material && d.material.unidad_medida ? d.material.unidad_medida.nombre : 'N/A';
                 const subtotal = parseFloat(d.cantidad) * parseFloat(d.precio_unitario);
                 
                 // Calcular IGV correctamente
@@ -907,6 +917,7 @@
                 detallesHtml += `<tr>
                     <td>${materialNombre}</td>
                     <td>${materialCodigo}</td>
+                    <td>${unidadMedida}</td>
                     <td class="text-end">${parseFloat(d.cantidad).toFixed(3)}</td>
                     <td class="text-end">S/ ${parseFloat(d.precio_unitario).toFixed(2)}</td>
                     <td class="text-end">S/ ${subtotal.toFixed(2)}</td>
@@ -966,12 +977,17 @@
             nea.detalles.forEach(d => {
                 detalleCounter++;
                 const materialNombre = d.material ? d.material.nombre : 'N/A';
+                const unidadMedida = d.material && d.material.unidad_medida ? d.material.unidad_medida.nombre : 'N/A';
                 const subtotal = parseFloat(d.cantidad) * parseFloat(d.precio_unitario);
                 const html = `
                     <tr data-detalle-id="detalle_${detalleCounter}">
                         <td>
                             <small>${materialNombre}</small>
                             <input type="hidden" class="form-detalle-material-id" value="${d.material_id}">
+                        </td>
+                        <td>
+                            <small><strong>${unidadMedida}</strong></small>
+                            <input type="hidden" class="form-detalle-unidad" value="${unidadMedida}">
                         </td>
                         <td>
                             <input type="number" class="form-control form-control-sm form-detalle-cantidad" value="${parseFloat(d.cantidad).toFixed(3)}" step="0.001" min="0" required>

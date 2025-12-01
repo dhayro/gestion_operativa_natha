@@ -38,6 +38,7 @@ use App\Http\Controllers\FichaActividadDetalleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ConsultaNeaController;
 use App\Http\Controllers\MaterialStockController;
+use App\Http\Controllers\StockController;
 
 Route::get('/test-email', function () {
     try {
@@ -144,6 +145,14 @@ Route::prefix('empleados')->group(function () {
     Route::get('/data', [EmpleadoController::class, 'getData'])->name('empleados.data');
     Route::get('/', [EmpleadoController::class, 'index'])->name('empleados.index');
     Route::post('/', [EmpleadoController::class, 'store'])->name('empleados.store');
+    
+    // Rutas para cascada de ubigeo (ANTES de rutas con parámetros dinámicos)
+    Route::get('/departamentos', [EmpleadoController::class, 'getDepartamentos'])->name('empleado.departamentos');
+    Route::get('/provincias/{departamento}', [EmpleadoController::class, 'getProvincias'])->name('empleado.provincias');
+    Route::get('/distritos/{provincia}', [EmpleadoController::class, 'getDistritos'])->name('empleado.distritos');
+    Route::get('/ubigeo-jerarquia/{ubigeo}', [EmpleadoController::class, 'getUbigeoHierarquia'])->name('empleado.ubigeo.jerarquia');
+    
+    // Rutas CRUD con parámetros dinámicos (DESPUÉS de rutas estáticas)
     Route::get('/{empleado}', [EmpleadoController::class, 'show'])->name('empleados.show');
     Route::put('/{empleado}', [EmpleadoController::class, 'update'])->name('empleados.update');
     Route::delete('/{empleado}', [EmpleadoController::class, 'destroy'])->name('empleados.destroy');
@@ -334,6 +343,15 @@ Route::prefix('consulta-nea')->name('consulta_nea.')->group(function () {
     Route::get('/{neaId}/exportar', [ConsultaNeaController::class, 'exportarReporte'])->name('exportar');
 });
 
+// Rutas para Consulta de Stock General
+Route::prefix('stock')->name('stock.')->group(function () {
+    Route::get('/', [StockController::class, 'index'])->name('index');
+    Route::get('/data', [StockController::class, 'getData'])->name('data');
+    Route::get('/{materialId}/movimientos', [StockController::class, 'getMovimientos'])->name('movimientos');
+    Route::get('/resumen/categoria', [StockController::class, 'getResumenPorCategoria'])->name('resumen_categoria');
+    Route::get('/exportar', [StockController::class, 'exportarStock'])->name('exportar');
+});
+
 // Rutas CRUD para Tipos de Actividad
 Route::prefix('tipos-actividad')->group(function () {
     // Rutas específicas PRIMERO (antes de /{tiposActividad})
@@ -368,7 +386,12 @@ Route::prefix('vehiculos')->group(function () {
 
 // Rutas CRUD para SOATs
 Route::prefix('soats')->group(function () {
+    // Rutas explícitas PRIMERO (antes de /{id})
     Route::get('/data', [SoatController::class, 'getData'])->name('soats.data');
+    Route::get('/vehiculos/sin-soat', [SoatController::class, 'getVehiculosSinSoat'])->name('soats.vehiculos.sin-soat');
+    Route::get('/api/proveedores', [SoatController::class, 'getProveedores'])->name('soats.proveedores');
+    
+    // Rutas CRUD con parámetros dinámicos DESPUÉS
     Route::get('/', [SoatController::class, 'index'])->name('soats.index');
     Route::post('/', [SoatController::class, 'store'])->name('soats.store');
     Route::get('/{soat}', [SoatController::class, 'show'])->name('soats.show');

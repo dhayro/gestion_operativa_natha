@@ -230,6 +230,7 @@ class MedidorController extends Controller
     public function getMateriales()
     {
         $materiales = Material::where('estado', true)
+            ->where('nombre', 'like', '%medidor%')
             ->select('id', 'nombre')
             ->orderBy('nombre')
             ->get()

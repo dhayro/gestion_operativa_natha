@@ -1,0 +1,218 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║        🎯 HERRAMIENTAS DE IMPORTACIÓN UBIGEO - GESTION OPERATIVA            ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📦 ARCHIVOS CREADOS:
+═══════════════════════════════════════════════════════════════════════════════
+
+1️⃣  SCRIPTS DE IMPORTACIÓN
+   ├─ import_ubigeo.py              [Python] Script principal de importación
+   ├─ import_ubigeo.bat             [Windows] Ejecutable batch para Windows
+   ├─ import_ubigeo.ps1             [PowerShell] Script para Windows PowerShell
+   └─ check_ubigeo.py               [Python] Verificar datos importados
+
+2️⃣  COMANDOS LARAVEL
+   └─ gestion_operativa/app/Console/Commands/ImportUbigeo.php
+      Comando Artisan: php artisan ubigeo:import
+
+3️⃣  ARCHIVOS DE CONFIGURACIÓN
+   ├─ ubigeo_import_config.json     Configuración de importación
+   └─ EJEMPLOS_UBIGEO.sql           Consultas SQL útiles
+
+4️⃣  DOCUMENTACIÓN
+   ├─ README_IMPORTAR_UBIGEO.txt    [AQUÍ] Inicio rápido
+   ├─ IMPORTAR_UBIGEO.md            Documentación completa
+   └─ Este archivo                  Resumen de lo creado
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🚀 INICIO RÁPIDO - ELIGE TU OPCIÓN:
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─ OPCIÓN 1: WINDOWS (MÁS FÁCIL) ─────────────────────────────────────────────┐
+│                                                                             │
+│  1. Abre el Explorador de archivos                                         │
+│  2. Ve a: D:\gestion_operativa_natha                                       │
+│  3. Haz DOBLE CLIC en: import_ubigeo.bat                                   │
+│  4. ¡Listo! Espera a que termine                                          │
+│                                                                             │
+│  ✓ Automáticamente verifica Python y dependencias                         │
+│  ✓ Importa todos los datos                                                │
+│  ✓ Muestra progreso en tiempo real                                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ OPCIÓN 2: TERMINAL / CMD (MÁS CONTROL) ────────────────────────────────────┐
+│                                                                             │
+│  Windows (CMD):                                                            │
+│  ─────────────────                                                         │
+│  cd D:\gestion_operativa_natha                                             │
+│  python import_ubigeo.py "UBIGEO 2022_1891 distritos.xlsx"                │
+│                                                                             │
+│  Windows (PowerShell):                                                     │
+│  ─────────────────────                                                     │
+│  cd D:\gestion_operativa_natha                                             │
+│  .\import_ubigeo.ps1                                                       │
+│                                                                             │
+│  Mac / Linux:                                                              │
+│  ────────────                                                              │
+│  cd /ruta/a/gestion_operativa_natha                                        │
+│  python3 import_ubigeo.py "UBIGEO 2022_1891 distritos.xlsx"               │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ OPCIÓN 3: LARAVEL ARTISAN ─────────────────────────────────────────────────┐
+│                                                                             │
+│  cd gestion_operativa                                                       │
+│  php artisan ubigeo:import "../UBIGEO 2022_1891 distritos.xlsx" --limpiar │
+│                                                                             │
+│  ✓ Integrado con tu aplicación Laravel                                   │
+│  ✓ Usa modelos de Laravel                                                │
+│  ✓ Mejor control de errores                                              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ VERIFICAR QUE FUNCIONÓ:
+═══════════════════════════════════════════════════════════════════════════════
+
+Opción A: Script Python
+  python check_ubigeo.py resumen
+  python check_ubigeo.py departamentos
+  python check_ubigeo.py jerarquia 010000
+
+Opción B: Query SQL
+  mysql -u root gestion_operativa
+  SELECT COUNT(*) FROM ubigeos;
+
+Opción C: Laravel Tinker
+  cd gestion_operativa
+  php artisan tinker
+  >>> Ubigeo::count()
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📋 REQUISITOS:
+═══════════════════════════════════════════════════════════════════════════════
+
+✓ Python 3.7+ (descargar: https://www.python.org/downloads/)
+✓ MySQL corriendo localmente
+✓ Archivo Excel con estructura correcta
+
+📦 Instalar dependencias Python (si es necesario):
+   pip install pandas mysql-connector-python openpyxl tabulate
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📊 ¿QUÉ SE IMPORTARÁ?:
+═══════════════════════════════════════════════════════════════════════════════
+
+De tu Excel se extraerá y se organizará de forma jerárquica:
+
+  DEPARTAMENTOS (ej: AMAZONAS)
+  ├─ PROVINCIAS (ej: CHACHAPOYAS)
+  │  ├─ DISTRITOS (ej: CHACHAPOYAS)
+  │  ├─ DISTRITOS (ej: ASUNCION)
+  │  └─ DISTRITOS (ej: BALSAS)
+  └─ PROVINCIAS (ej: LUYA)
+     ├─ DISTRITOS
+     └─ DISTRITOS
+
+Cada nivel tiene relaciones establecidas automáticamente.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🔍 ESTRUCTURA DEL EXCEL ESPERADA:
+═══════════════════════════════════════════════════════════════════════════════
+
+IDDIST  | NOMBDEP   | NOMBPROV    | NOMBDIST      | (Otras columnas opcionales)
+--------|-----------|-------------|---------------|--------------------------
+010101  | AMAZONAS  | CHACHAPOYAS | CHACHAPOYAS   | ...
+010102  | AMAZONAS  | CHACHAPOYAS | ASUNCION      | ...
+010103  | AMAZONAS  | CHACHAPOYAS | BALSAS        | ...
+
+Columnas requeridas:
+  • IDDIST:   Código UBIGEO (6 dígitos)
+  • NOMBDEP:  Nombre del departamento
+  • NOMBPROV: Nombre de la provincia
+  • NOMBDIST: Nombre del distrito
+
+═══════════════════════════════════════════════════════════════════════════════
+
+❓ PREGUNTAS FRECUENTES:
+═══════════════════════════════════════════════════════════════════════════════
+
+P: ¿Qué pasa si ejecuto el script varias veces?
+R: Detecta duplicados y no los inserta de nuevo. Usa --limpiar para forzar.
+
+P: ¿Cuánto tarda?
+R: ~2-5 segundos para 2500+ registros.
+
+P: ¿Puedo personalizar los datos?
+R: Sí, solo modifica el Excel manteniendo la estructura.
+
+P: ¿Hay error de conexión?
+R: Verifica MySQL esté corriendo y los datos en gestion_operativa/.env
+
+P: ¿Cómo obtengo el UBIGEO en mi código?
+R: $ubigeo = Ubigeo::where('codigo_postal', '010101')->first();
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📚 DOCUMENTACIÓN DISPONIBLE:
+═══════════════════════════════════════════════════════════════════════════════
+
+  ↳ README_IMPORTAR_UBIGEO.txt    Guía rápida (este archivo)
+  ↳ IMPORTAR_UBIGEO.md            Documentación completa (leer si hay dudas)
+  ↳ EJEMPLOS_UBIGEO.sql           Queries SQL útiles
+  ↳ ubigeo_import_config.json     Configuración avanzada
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🎯 PRÓXIMOS PASOS:
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Ejecuta la importación con tu opción elegida
+2. Verifica que los datos se importaron correctamente
+3. Usa los datos en tu aplicación
+
+Ejemplo en tu código Laravel:
+  
+  $empleado = new Empleado([
+    'nombre' => 'Juan',
+    'ubigeo_id' => 1  // ID del UBIGEO importado
+  ]);
+  $empleado->save();
+
+═══════════════════════════════════════════════════════════════════════════════
+
+⚡ ACCESO RÁPIDO A COMANDOS:
+═══════════════════════════════════════════════════════════════════════════════
+
+Windows (Ejecutable):           MacOS/Linux (Terminal):
+├─ import_ubigeo.bat           ├─ python import_ubigeo.py <archivo>
+├─ import_ubigeo.ps1           ├─ python3 import_ubigeo.py <archivo>
+└─ check_ubigeo.py             └─ python check_ubigeo.py resumen
+
+Laravel (Desde carpeta gestion_operativa):
+└─ php artisan ubigeo:import "<ruta>" --limpiar
+
+═══════════════════════════════════════════════════════════════════════════════
+
+¿NECESITAS AYUDA?
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Lee el archivo IMPORTAR_UBIGEO.md (documentación completa)
+2. Revisa EJEMPLOS_UBIGEO.sql para entender los datos
+3. Ejecuta: python import_ubigeo.py --help
+4. Ejecuta: php artisan ubigeo:import --help
+
+═══════════════════════════════════════════════════════════════════════════════
+
+✨ Creado por GitHub Copilot - Sistema de Gestión Operativa Natha
+Última actualización: Diciembre 2025
+
+═══════════════════════════════════════════════════════════════════════════════
