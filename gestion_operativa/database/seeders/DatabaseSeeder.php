@@ -7,10 +7,15 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Database\Seeders\AreaSeeder;
 use Database\Seeders\CargoSeeder;
+use Database\Seeders\CategoriaSeeder;
 use Database\Seeders\EmpleadoSeeder;
+use Database\Seeders\MaterialSeeder;
+use Database\Seeders\ProveedorSeeder;
 use Database\Seeders\UserSeeder;
 use Database\Seeders\TipoCombustibleSeeder;
 use Database\Seeders\VehiculoSeeder;
+use Database\Seeders\SoatRealSeeder;
+use Database\Seeders\UnidadMedidaSeeder;
 use Illuminate\Support\Facades\Schema;
 
 class DatabaseSeeder extends Seeder
@@ -27,8 +32,13 @@ class DatabaseSeeder extends Seeder
             UbigeoSeeder::class,
             AreaSeeder::class,
             CargoSeeder::class,
+            CategoriaSeeder::class,
             TipoCombustibleSeeder::class,
+            UnidadMedidaSeeder::class,
+            MaterialSeeder::class,
+            ProveedorSeeder::class,
             VehiculoSeeder::class,
+            SoatRealSeeder::class,
             EmpleadoSeeder::class,
             UserSeeder::class,
             // Otros seeders se pueden agregar aquí si es necesario
