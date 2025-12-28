@@ -17,6 +17,10 @@ use Database\Seeders\VehiculoSeeder;
 use Database\Seeders\SoatRealSeeder;
 use Database\Seeders\UnidadMedidaSeeder;
 use Database\Seeders\SuministrosMedidoresSeeder;
+use Database\Seeders\ConstruccionesSeeder;
+use Database\Seeders\TiposPropiedadSeeder;
+use Database\Seeders\SituacionesSeeder;
+use Database\Seeders\UsosSeeder;
 use Illuminate\Support\Facades\Schema;
 
 class DatabaseSeeder extends Seeder
@@ -42,6 +46,10 @@ class DatabaseSeeder extends Seeder
             SoatRealSeeder::class,
             EmpleadoSeeder::class,
             UserSeeder::class,
+            ConstruccionesSeeder::class,
+            TiposPropiedadSeeder::class,
+            SituacionesSeeder::class,
+            UsosSeeder::class,
             SuministrosMedidoresSeeder::class,
         ]);
 
