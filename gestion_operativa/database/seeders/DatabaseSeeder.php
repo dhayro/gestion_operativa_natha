@@ -16,6 +16,7 @@ use Database\Seeders\TipoCombustibleSeeder;
 use Database\Seeders\VehiculoSeeder;
 use Database\Seeders\SoatRealSeeder;
 use Database\Seeders\UnidadMedidaSeeder;
+use Database\Seeders\SuministrosMedidoresSeeder;
 use Illuminate\Support\Facades\Schema;
 
 class DatabaseSeeder extends Seeder
@@ -41,7 +42,7 @@ class DatabaseSeeder extends Seeder
             SoatRealSeeder::class,
             EmpleadoSeeder::class,
             UserSeeder::class,
-            // Otros seeders se pueden agregar aquí si es necesario
+            SuministrosMedidoresSeeder::class,
         ]);
 
         Schema::enableForeignKeyConstraints();

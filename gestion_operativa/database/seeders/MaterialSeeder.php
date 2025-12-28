@@ -58,6 +58,7 @@ class MaterialSeeder extends Seeder
             ['id' => 41, 'categoria_id' => 11, 'nombre' => 'Tapas metálicas trifásicas', 'unidad_medida_id' => 1, 'stock_minimo' => 25, 'codigo_material' => 'MAT-041'],
             ['id' => 42, 'categoria_id' => 11, 'nombre' => 'Tapas poliméricas monofásicas', 'unidad_medida_id' => 1, 'stock_minimo' => 25, 'codigo_material' => 'MAT-042'],
             ['id' => 43, 'categoria_id' => 11, 'nombre' => 'Tapas poliméricas trifásicas', 'unidad_medida_id' => 1, 'stock_minimo' => 25, 'codigo_material' => 'MAT-043'],
+            ['id' => 44, 'categoria_id' => 7, 'nombre' => 'Medidor de Energia', 'unidad_medida_id' => 1, 'stock_minimo' => 0, 'codigo_material' => 'MEDIDOR-001'],
         ];
 
         foreach ($materiales as $material) {
