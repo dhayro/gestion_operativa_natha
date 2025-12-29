@@ -179,7 +179,7 @@ class EmpleadoController extends Controller
         }
 
         $request->validate([
-            'perfil' => 'required|in:admin,supervisor,tecnico',
+            'perfil' => 'required|in:admin,supervisor,tecnico,operario',
             'password' => 'required|string|min:6',
         ]);
 
@@ -228,7 +228,7 @@ class EmpleadoController extends Controller
         }
 
         $request->validate([
-            'perfil' => 'required|in:admin,supervisor,tecnico',
+            'perfil' => 'required|in:admin,supervisor,tecnico,operario',
             'estado' => 'required|boolean',
             'password' => 'nullable|string|min:6',
         ]);

@@ -218,6 +218,7 @@
                             <option value="admin">Administrador</option>
                             <option value="supervisor">Supervisor</option>
                             <option value="tecnico">Técnico</option>
+                            <option value="operario">Operario</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -258,6 +259,7 @@
                                 <option value="admin">Administrador</option>
                                 <option value="supervisor">Supervisor</option>
                                 <option value="tecnico">Técnico</option>
+                                <option value="operario">Operario</option>
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
