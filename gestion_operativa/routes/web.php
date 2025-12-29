@@ -18,6 +18,8 @@ use App\Http\Controllers\CuadrillaEmpleadoController;
 use App\Http\Controllers\TipoCombustibleController; 
 use App\Http\Controllers\TiposActividadController;
 use App\Http\Controllers\VehiculoController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\SoatController; 
 use App\Http\Controllers\AsignacionVehiculoController; 
 use App\Http\Controllers\PapeletaController;
@@ -593,4 +595,35 @@ Route::prefix('papeletas')->group(function () {
     Route::get('/dotaciones/tipos/combustible', [DotacionCombustibleController::class, 'tiposCombustible'])->name('dotaciones.tipos');
 });
 
+});
+
+// Rutas de Administración de Roles y Permisos
+Route::prefix('admin')->middleware(['auth'])->group(function () {
+    // Gestión de Roles
+    Route::prefix('roles')->group(function () {
+        // Rutas específicas PRIMERO (antes de parámetros dinámicos)
+        Route::get('/data', [RoleController::class, 'getData'])->name('roles.data');
+        Route::get('/crear', [RoleController::class, 'create'])->name('roles.create');
+        
+        // Rutas genéricas DESPUÉS
+        Route::get('/', [RoleController::class, 'index'])->name('roles.index');
+        Route::post('/', [RoleController::class, 'store'])->name('roles.store');
+        Route::get('/{role}', [RoleController::class, 'show'])->name('roles.show');
+        Route::get('/{role}/editar', [RoleController::class, 'edit'])->name('roles.edit');
+        Route::put('/{role}', [RoleController::class, 'update'])->name('roles.update');
+        Route::delete('/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
+    });
+
+    // Gestión de Permisos
+    Route::prefix('permissions')->group(function () {
+        Route::get('/data', [PermissionController::class, 'getData'])->name('permissions.data');
+        Route::get('/', [PermissionController::class, 'index'])->name('permissions.index');
+        Route::post('/', [PermissionController::class, 'store'])->name('permissions.store');
+        Route::get('/matrix', [PermissionController::class, 'matrix'])->name('permissions.matrix');
+        Route::post('/matrix', [PermissionController::class, 'updateMatrix'])->name('permissions.matrix.update');
+        Route::get('/module/{module}', [PermissionController::class, 'filterByModule'])->name('permissions.byModule');
+        Route::get('/{permission}', [PermissionController::class, 'show'])->name('permissions.show');
+        Route::put('/{permission}', [PermissionController::class, 'update'])->name('permissions.update');
+        Route::delete('/{permission}', [PermissionController::class, 'destroy'])->name('permissions.destroy');
+    });
 });

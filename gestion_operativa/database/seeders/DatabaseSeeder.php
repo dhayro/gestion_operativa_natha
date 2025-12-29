@@ -12,6 +12,7 @@ use Database\Seeders\EmpleadoSeeder;
 use Database\Seeders\MaterialSeeder;
 use Database\Seeders\ProveedorSeeder;
 use Database\Seeders\UserSeeder;
+use Database\Seeders\EmpleadoUsuarioSeeder;
 use Database\Seeders\TipoCombustibleSeeder;
 use Database\Seeders\VehiculoSeeder;
 use Database\Seeders\SoatRealSeeder;
@@ -21,6 +22,8 @@ use Database\Seeders\ConstruccionesSeeder;
 use Database\Seeders\TiposPropiedadSeeder;
 use Database\Seeders\SituacionesSeeder;
 use Database\Seeders\UsosSeeder;
+use Database\Seeders\PermissionSeeder;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Support\Facades\Schema;
 
 class DatabaseSeeder extends Seeder
@@ -34,6 +37,8 @@ class DatabaseSeeder extends Seeder
         Schema::disableForeignKeyConstraints();
 
         $this->call([
+            PermissionSeeder::class,
+            RoleSeeder::class,
             UbigeoSeeder::class,
             AreaSeeder::class,
             CargoSeeder::class,
@@ -46,6 +51,8 @@ class DatabaseSeeder extends Seeder
             SoatRealSeeder::class,
             EmpleadoSeeder::class,
             UserSeeder::class,
+            EmpleadoUsuarioSeeder::class,
+            EmpleadoUsuarioSeeder::class,
             ConstruccionesSeeder::class,
             TiposPropiedadSeeder::class,
             SituacionesSeeder::class,
