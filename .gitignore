@@ -11,6 +11,10 @@
 *.sln.docstates
 *.env
 
+# Large seed files (para pasar manualmente)
+gestion_operativa/database/seeders/data/seeder_datos.json
+seeder_datos_*.json
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
