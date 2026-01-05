@@ -1,0 +1,101 @@
+╔═════════════════════════════════════════════════════════════════════════════╗
+║                    GUÍA DE IMPORTACIÓN DE UBIGEO                            ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+
+��� REQUISITOS:
+─────────────
+1. Python 3.7+
+2. Librerías necesarias (instalar con):
+   pip install pandas mysql-connector-python python-dotenv openpyxl
+
+3. El archivo Excel: UBIGEO 2022_1891 distritos.xlsx
+   (debe estar en la raíz del proyecto)
+
+
+��� PASOS PARA EJECUTAR:
+──────────────────────
+
+1. Verifica que tu base de datos esté corriendo:
+   - Si usas MySQL: sudo systemctl start mysql
+   - O configura según tu entorno
+
+2. Instala las dependencias (si no lo has hecho):
+   pip install pandas mysql-connector-python python-dotenv openpyxl
+
+3. Configura las credenciales en uno de estos lugares:
+   
+   OPCIÓN A - Variables de entorno (.env en gestion_operativa/):
+   ───────────────────────────────────────────────────────────
+   DB_HOST=localhost
+   DB_USERNAME=root
+   DB_PASSWORD=tu_contraseña
+   DB_DATABASE=gestion_operativa
+
+   OPCIÓN B - Editar config_ubigeo.py:
+   ──────────────────────────────────
+   Abre config_ubigeo.py y modifica:
+   DB_CONFIG = {
+       'host': 'localhost',
+       'user': 'tu_usuario',
+       'password': 'tu_contraseña',
+       'database': 'gestion_operativa'
+   }
+
+4. Ejecuta el script:
+   python import_ubigeo.py
+
+5. Verifica los resultados en tu base de datos:
+   SELECT COUNT(*) FROM ubigeos;
+
+
+��� ESTRUCTURA DE DATOS IMPORTADOS:
+──────────────────────────────────
+
+Tabla: ubigeos
+Campos:
+  - id: ID único
+  - iddist: Código UBIGEO (010101, 010102, etc.)
+  - nombre: Nombre del distrito
+  - departamento: Departamento (AMAZONAS, etc.)
+  - provincia: Provincia (CHACHAPOYAS, etc.)
+  - capital_legal: Capital legal del distrito
+  - cod_reg_nat: Código de región natural
+  - region_natural: Nombre de región (SIERRA, SELVA ALTA, etc.)
+  - estado: 1 = activo
+  - created_at: Timestamp de creación
+
+
+⚠️  SOLUCIÓN DE PROBLEMAS:
+──────────────────────────
+
+Error: "No module named 'pandas'"
+→ pip install pandas
+
+Error: "No module named 'mysql'"
+→ pip install mysql-connector-python
+
+Error: "File not found"
+→ Verifica que UBIGEO 2022_1891 distritos.xlsx esté en la raíz
+
+Error: "Connection refused"
+→ Verifica que MySQL esté corriendo
+→ Verifica credenciales en .env o config_ubigeo.py
+
+Error: "Duplicate entry"
+→ Es normal, el script ignora duplicados
+
+
+��� CONSEJOS:
+────────────
+- El proceso es rápido: ~1891 registros en pocos segundos
+- Los duplicados se ignoran automáticamente
+- Se crea la tabla automáticamente si no existe
+- Puedes ejecutar varias veces sin problemas
+
+
+��� VERIFICAR DATOS:
+───────────────────
+En MySQL:
+  SELECT * FROM ubigeos LIMIT 10;
+  SELECT COUNT(*) FROM ubigeos;
+  SELECT DISTINCT departamento FROM ubigeos;

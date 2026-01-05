@@ -1,0 +1,110 @@
+.widget-stats {
+    border-left: 4px solid #0d6efd;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: all 0.3s ease;
+}
+
+.widget-stats:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.widget-stats .widget-heading {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.widget-stats .widget-heading h5 {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.widget-stats .widget-content {
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.widget-stats .stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #0d6efd;
+    margin: 0.5rem 0;
+}
+
+.widget-stats .stat-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin: 0;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    transform: translateY(-4px);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.card-header .card-title h5 {
+    font-weight: 700;
+    color: #212529;
+    margin: 0;
+}
+
+.card-header .card-title small {
+    font-size: 0.75rem;
+    display: block;
+    margin-top: 0.25rem;
+}
+
+.employee-list .avatar {
+    flex-shrink: 0;
+}
+
+.employee-list .avatar.me-2 {
+    margin-right: 0.5rem !important;
+}
+
+.employee-list small.text-muted {
+    font-size: 0.75rem;
+}
+
+.vehicle-list .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+}
+
+.vehicle-list small {
+    font-size: 0.875rem;
+}
+
+.vehicle-list small.text-muted {
+    font-size: 0.75rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .widget-stats .stat-number {
+        font-size: 2rem;
+    }
+
+    .card {
+        margin-bottom: 1rem;
+    }
+}
