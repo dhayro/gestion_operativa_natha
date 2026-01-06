@@ -21,7 +21,7 @@
 
         <ul class="navbar-item flex-row ms-lg-auto ms-0">
 
-            <li class="nav-item dropdown language-dropdown">
+            <!-- <li class="nav-item dropdown language-dropdown">
                 <a href="javascript:void(0);" class="nav-link dropdown-toggle" id="language-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     <img src="{{Vite::asset('resources/images/1x1/us.svg')}}" class="flag-width" alt="flag">
                 </a>
@@ -154,7 +154,7 @@
                     </div>
                 </div>
                 
-            </li>
+            </li> -->
 
             <li class="nav-item dropdown user-profile-dropdown  order-lg-0 order-1">
                 <a href="javascript:void(0);" class="nav-link dropdown-toggle user" id="userProfileDropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -165,19 +165,20 @@
                     </div>
                 </a>
 
-                <div class="dropdown-menu position-absolute" aria-labelledby="userProfileDropdown">
-                    <div class="user-profile-section">
+                <div class="dropdown-menu position-absolute" aria-labelledby="userProfileDropdown" style="min-width: 280px;">
+                    <div class="user-profile-section" style="padding: 25px 20px; border-bottom: 1px solid #e9ecef;">
                         <div class="media mx-auto">
-                            <div class="emoji me-2">
+                            <div class="emoji me-3" style="font-size: 32px;">
                                 &#x1F44B;
                             </div>
                             <div class="media-body">
-                                <h5>Shaun Park</h5>
-                                <p>Project Leader</p>
+                                <h5 class="mb-2" style="font-size: 1.1rem; font-weight: 600;">{{ auth()->user()->empleado->nombre ?? auth()->user()->name }}</h5>
+                                <p class="mb-2 text-primary fw-semibold" style="font-size: 0.95rem;">{{ auth()->user()->roles->first()->name ?? 'Usuario' }}</p>
+                                <small class="d-block" style="color: #6c757d; font-size: 0.85rem;">{{ auth()->user()->email }}</small>
                             </div>
                         </div>
                     </div>
-                    <div class="dropdown-item">
+                    <!-- <div class="dropdown-item">
                         <a href="{{getRouterValue()}}user/profile">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-user"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> <span>Perfil</span>
                         </a>
@@ -191,7 +192,7 @@
                         <a href="{{getRouterValue()}}authentication/boxed/lockscreen">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-lock"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> <span>Bloquear Pantalla</span>
                         </a>
-                    </div>
+                    </div> -->
                     <div class="dropdown-item">
                         <a href="{{ route('logout') }}"
                             onclick="event.preventDefault();

@@ -123,70 +123,6 @@
                         <a href="{{ route('materiales.index') }}">Materiales</a>
                     </li>
                     @endif
-                    @if(auth()->user()->hasPermission('ver_stock_materiales'))
-                    <li class="{{ Request::routeIs('stock_materiales.index') ? 'active' : '' }}">
-                        <a href="{{ route('stock_materiales.index') }}">📦 Stock por Cuadrilla</a>
-                    </li>
-                    @endif
-                    @if(auth()->user()->hasPermission('ver_proveedores'))
-                    <li class="{{ Request::routeIs('proveedores.index') ? 'active' : '' }}">
-                        <a href="{{ route('proveedores.index') }}">Proveedores</a>
-                    </li>
-                    @endif
-                </ul>
-            </li>
-            @endif
-
-            <!-- MAESTROS DE ACTIVOS -->
-            @if(auth()->user()->hasAnyRole(['admin', 'tecnico', 'supervisor']))
-            <li class="menu {{ ($catName === 'maestros-activos') ? 'active' : '' }}">
-                <a href="#maestros-activos" data-bs-toggle="collapse" aria-expanded="{{ ($catName === 'maestros-activos') ? 'true' : 'false' }}" class="dropdown-toggle">
-                    <div class="">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-truck"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
-                        <span>Maestros de Activos</span>
-                    </div>
-                    <div>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                    </div>
-                </a>
-                <ul class="collapse submenu list-unstyled {{ ($catName === 'maestros-activos') ? 'show' : '' }}" id="maestros-activos" data-bs-parent="#accordionExample">
-                    @if(auth()->user()->hasPermission('ver_vehiculos'))
-                    <li class="{{ Request::routeIs('vehiculos.index') ? 'active' : '' }}">
-                        <a href="{{ route('vehiculos.index') }}">Vehículos</a>
-                    </li>
-                    @endif
-                    @if(auth()->user()->hasPermission('ver_combustibles'))
-                    <li class="{{ Request::routeIs('tipo_combustibles.index') ? 'active' : '' }}">
-                        <a href="{{ route('tipo_combustibles.index') }}">Tipos de Combustible</a>
-                    </li>
-                    @endif
-                    @if(auth()->user()->hasPermission('ver_soats'))
-                    <li class="{{ Request::routeIs('soats.index') ? 'active' : '' }}">
-                        <a href="{{ route('soats.index') }}">SOATs</a>
-                    </li>
-                    @endif
-                    @if(auth()->user()->hasPermission('ver_medidores'))
-                    <li class="{{ Request::routeIs('medidor.index') ? 'active' : '' }}">
-                        <a href="{{ route('medidor.index') }}">Medidores</a>
-                    </li>
-                    @endif
-                </ul>
-            </li>
-            @endif
-
-            <!-- PROCESOS Y SERVICIOS -->
-            @if(auth()->user()->hasAnyRole(['admin', 'tecnico', 'supervisor']))
-            <li class="menu {{ ($catName === 'procesos-servicios') ? 'active' : '' }}">
-                <a href="#procesos-servicios" data-bs-toggle="collapse" aria-expanded="{{ ($catName === 'procesos-servicios') ? 'true' : 'false' }}" class="dropdown-toggle">
-                    <div class="">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-layers"><polygon points="12 2 2 7 2 17 12 22 22 17 22 7 12 2"></polygon><polyline points="2 7 12 12 22 7"></polyline><polyline points="12 12 12 22"></polyline></svg>
-                        <span>Procesos y Servicios</span>
-                    </div>
-                    <div>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                    </div>
-                </a>
-                <ul class="collapse submenu list-unstyled {{ ($catName === 'procesos-servicios') ? 'show' : '' }}" id="procesos-servicios" data-bs-parent="#accordionExample">
                     @if(auth()->user()->hasPermission('ver_tipos_actividad'))
                     <li class="{{ Request::routeIs('tipos-actividad.index') ? 'active' : '' }}">
                         <a href="{{ route('tipos-actividad.index') }}">Tipos de Actividad</a>
@@ -197,21 +133,6 @@
                         <a href="{{ route('tipo-comprobantes.index') }}">Tipos de Comprobante</a>
                     </li>
                     @endif
-                    @if(auth()->user()->hasPermission('ver_neas'))
-                    <li class="{{ Request::routeIs('neas.index') ? 'active' : '' }}">
-                        <a href="{{ route('neas.index') }}">NEAs</a>
-                    </li>
-                    @endif
-                    @if(auth()->user()->hasPermission('ver_pecosas'))
-                    <li class="{{ Request::routeIs('pecosas.index') ? 'active' : '' }}">
-                        <a href="{{ route('pecosas.index') }}">PECOSAs</a>
-                    </li>
-                    @endif
-                    <li class="{{ Request::routeIs('stock.index') ? 'active' : '' }}">
-                        <a href="{{ route('stock.index') }}">
-                            Consulta de Stock
-                        </a>
-                    </li>
                 </ul>
             </li>
             @endif
@@ -263,6 +184,80 @@
             </li>
             @endif
 
+            <!-- MAESTROS DE ACTIVOS -->
+            @if(auth()->user()->hasAnyRole(['admin', 'tecnico', 'supervisor']))
+            <li class="menu {{ ($catName === 'maestros-activos') ? 'active' : '' }}">
+                <a href="#maestros-activos" data-bs-toggle="collapse" aria-expanded="{{ ($catName === 'maestros-activos') ? 'true' : 'false' }}" class="dropdown-toggle">
+                    <div class="">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-truck"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+                        <span>Maestros de Activos</span>
+                    </div>
+                    <div>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </div>
+                </a>
+                <ul class="collapse submenu list-unstyled {{ ($catName === 'maestros-activos') ? 'show' : '' }}" id="maestros-activos" data-bs-parent="#accordionExample">
+                    @if(auth()->user()->hasPermission('ver_combustibles'))
+                    <li class="{{ Request::routeIs('tipo_combustibles.index') ? 'active' : '' }}">
+                        <a href="{{ route('tipo_combustibles.index') }}">Tipos de Combustible</a>
+                    </li>
+                    @endif
+                    @if(auth()->user()->hasPermission('ver_vehiculos'))
+                    <li class="{{ Request::routeIs('vehiculos.index') ? 'active' : '' }}">
+                        <a href="{{ route('vehiculos.index') }}">Vehículos</a>
+                    </li>
+                    @endif
+                    @if(auth()->user()->hasPermission('ver_soats'))
+                    <li class="{{ Request::routeIs('soats.index') ? 'active' : '' }}">
+                        <a href="{{ route('soats.index') }}">SOATs</a>
+                    </li>
+                    @endif
+                    @if(auth()->user()->hasPermission('ver_medidores'))
+                    <li class="{{ Request::routeIs('medidor.index') ? 'active' : '' }}">
+                        <a href="{{ route('medidor.index') }}">Medidores</a>
+                    </li>
+                    @endif
+                    @if(auth()->user()->hasPermission('ver_proveedores'))
+                    <li class="{{ Request::routeIs('proveedores.index') ? 'active' : '' }}">
+                        <a href="{{ route('proveedores.index') }}">Proveedores</a>
+                    </li>
+                    @endif
+                </ul>
+            </li>
+            @endif
+
+            <!-- PROCESOS Y SERVICIOS -->
+            @if(auth()->user()->hasAnyRole(['admin', 'tecnico', 'supervisor']))
+            <li class="menu {{ ($catName === 'procesos-servicios') ? 'active' : '' }}">
+                <a href="#procesos-servicios" data-bs-toggle="collapse" aria-expanded="{{ ($catName === 'procesos-servicios') ? 'true' : 'false' }}" class="dropdown-toggle">
+                    <div class="">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-layers"><polygon points="12 2 2 7 2 17 12 22 22 17 22 7 12 2"></polygon><polyline points="2 7 12 12 22 7"></polyline><polyline points="12 12 12 22"></polyline></svg>
+                        <span>Procesos y Servicios</span>
+                    </div>
+                    <div>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </div>
+                </a>
+                <ul class="collapse submenu list-unstyled {{ ($catName === 'procesos-servicios') ? 'show' : '' }}" id="procesos-servicios" data-bs-parent="#accordionExample">
+                    @if(auth()->user()->hasPermission('ver_neas'))
+                    <li class="{{ Request::routeIs('neas.index') ? 'active' : '' }}">
+                        <a href="{{ route('neas.index') }}">NEAs</a>
+                    </li>
+                    @endif
+                    @if(auth()->user()->hasPermission('ver_pecosas'))
+                    <li class="{{ Request::routeIs('pecosas.index') ? 'active' : '' }}">
+                        <a href="{{ route('pecosas.index') }}">PECOSAs</a>
+                    </li>
+                    @endif
+                    <li class="{{ Request::routeIs('stock.index') ? 'active' : '' }}">
+                        <a href="{{ route('stock.index') }}">
+                            Consulta de Stock
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            @endif
+
             <!-- GESTIÓN OPERATIVA -->
             @if(auth()->user()->hasAnyRole(['admin', 'tecnico', 'supervisor', 'operario']))
             <li class="menu {{ ($catName === 'operativa') ? 'active' : '' }}">
@@ -279,6 +274,11 @@
                     @if(auth()->user()->hasPermission('ver_cuadrillas'))
                     <li class="{{ Request::routeIs('cuadrillas.index') ? 'active' : '' }}">
                         <a href="{{ route('cuadrillas.index') }}">Cuadrillas</a>
+                    </li>
+                    @endif
+                    @if(auth()->user()->hasPermission('ver_stock_materiales'))
+                    <li class="{{ Request::routeIs('stock_materiales.index') ? 'active' : '' }}">
+                        <a href="{{ route('stock_materiales.index') }}">📦 Stock por Cuadrilla</a>
                     </li>
                     @endif
                     @if(auth()->user()->hasPermission('ver_papeletas'))
