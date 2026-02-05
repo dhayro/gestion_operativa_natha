@@ -51,14 +51,24 @@ class NeaController extends Controller
      */
     public function getData(Request $request)
     {
-        $neas = Nea::with([
-            'proveedor',
-            'tipoComprobante',
-            'detalles.material',
-            'usuarioCreacion'
-        ])->orderByDesc('id'); // Ordenar por ID descendente (más reciente primero)
+        // Construir query con joins para evitar problemas con relaciones
+        $query = Nea::query()
+            ->leftJoin('proveedors', 'neas.proveedor_id', '=', 'proveedors.id')
+            ->leftJoin('tipo_comprobantes', 'neas.tipo_comprobante_id', '=', 'tipo_comprobantes.id')
+            ->select([
+                'neas.*',
+                'proveedors.razon_social as proveedor_razon_social',
+                'tipo_comprobantes.nombre as tipo_comprobante_nombre'
+            ])
+            ->with([
+                'proveedor',
+                'tipoComprobante',
+                'detalles.material',
+                'usuarioCreacion'
+            ])
+            ->orderByDesc('neas.id');
 
-        return DataTables::of($neas)
+        return DataTables::of($query)
             ->addIndexColumn()
             ->addColumn('proveedor_nombre', function ($nea) {
                 return $nea->proveedor ? $nea->proveedor->razon_social : 'N/A';
@@ -193,6 +203,18 @@ class NeaController extends Controller
                 return $actions;
             })
             ->rawColumns(['estado_badge', 'action'])
+            ->filterColumn('nro_documento', function($query, $keyword) {
+                $query->where('neas.nro_documento', 'LIKE', "%{$keyword}%");
+            })
+            ->filterColumn('fecha', function($query, $keyword) {
+                $query->where('neas.fecha', 'LIKE', "%{$keyword}%");
+            })
+            ->filterColumn('proveedor_nombre', function($query, $keyword) {
+                $query->where('proveedors.razon_social', 'LIKE', "%{$keyword}%");
+            })
+            ->filterColumn('tipo_comprobante_nombre', function($query, $keyword) {
+                $query->where('tipo_comprobantes.nombre', 'LIKE', "%{$keyword}%");
+            })
             ->make(true);
     }
 
