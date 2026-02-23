@@ -26,10 +26,42 @@ class Medidor extends Model
     ];
 
     protected $casts = [
-        'estado' => 'boolean',
+        'estado' => 'integer', // 1 = Disponible, 2 = Asignado
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];
+    
+    // Scopes para filtrar por estado
+    public function scopeDisponibles($query)
+    {
+        return $query->where('medidors.estado', 1);
+    }
+    
+    public function scopeAsignados($query)
+    {
+        return $query->where('medidors.estado', 2);
+    }
+    
+    // Método para cambiar estado
+    public function marcarAsignado()
+    {
+        $this->update(['estado' => 2]);
+    }
+    
+    public function marcarDisponible()
+    {
+        $this->update(['estado' => 1]);
+    }
+    
+    // Accessor para mostrar estado como texto
+    public function getEstadoTextoAttribute()
+    {
+        return match($this->estado) {
+            1 => 'Disponible',
+            2 => 'Asignado',
+            default => 'Desconocido'
+        };
+    }
 
     // Relación con Material
     public function material()
@@ -49,16 +81,10 @@ class Medidor extends Model
         return $this->belongsTo(User::class, 'usuario_actualizacion_id');
     }
 
-    // Scope para obtener solo los activos
+    // Scope para obtener solo los activos (medidores en uso)
     public function scopeActivos($query)
     {
-        return $query->where('estado', true);
-    }
-
-    // Accessor para mostrar el estado como texto
-    public function getEstadoTextoAttribute()
-    {
-        return $this->estado ? 'Activo' : 'Inactivo';
+        return $query->where('estado', '!=', 0); // Todos excepto eliminados
     }
 
     // Accessor para mostrar el material

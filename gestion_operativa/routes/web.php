@@ -83,6 +83,20 @@ Route::get('/', [DashboardController::class, 'index'])->name('dashboard.index');
 Route::get('/api/user/me', function () {
     try {
         $user = Auth::user();
+        
+        // Si el usuario es admin o supervisor, devolver todas las cuadrillas
+        if ($user->hasAnyRole(['admin', 'supervisor'])) {
+            return response()->json([
+                'id' => $user->id,
+                'email' => $user->email,
+                'roles' => $user->roles->pluck('nombre')->toArray(),
+                'empleado_id' => null,
+                'cuadrilla_id' => null,
+                'is_admin_or_supervisor' => true
+            ]);
+        }
+        
+        // Para operarios y técnicos, obtener su cuadrilla
         if (!$user || !$user->empleado) {
             return response()->json(['error' => 'Usuario no tiene empleado asignado'], 404);
         }
@@ -104,10 +118,12 @@ Route::get('/api/user/me', function () {
         return response()->json([
             'id' => $user->id,
             'email' => $user->email,
+            'roles' => $user->roles->pluck('nombre')->toArray(),
             'empleado_id' => $user->empleado_id,
             'empleado' => $empleado,
             'cuadrilla_id' => $cuadrilla->id,
-            'cuadrilla' => $cuadrilla
+            'cuadrilla' => $cuadrilla,
+            'is_admin_or_supervisor' => false
         ]);
     } catch (\Exception $e) {
         \Log::error('Error en /api/user/me:', [
@@ -119,6 +135,20 @@ Route::get('/api/user/me', function () {
     }
 });
 
+// Obtener una cuadrilla por ID (API)
+Route::get('/api/cuadrillas/{id}', function ($id) {
+    $cuadrilla = \App\Models\Cuadrilla::find($id);
+    
+    if (!$cuadrilla) {
+        return response()->json(['error' => 'Cuadrilla no encontrada'], 404);
+    }
+    
+    return response()->json([
+        'id' => $cuadrilla->id,
+        'nombre' => $cuadrilla->nombre,
+        'estado' => $cuadrilla->estado
+    ]);
+});
 
 // Materiales CRUD (rutas agrupadas igual que empleados)
 Route::prefix('materiales')->group(function () {
@@ -432,6 +462,7 @@ Route::prefix('medidor')->group(function () {
 Route::prefix('suministro')->group(function () {
     Route::get('/data', [SuministroController::class, 'getData'])->name('suministro.data');
     Route::get('/api/select', [SuministroController::class, 'getForSelect'])->name('suministro.select');
+    Route::get('/api/get/{id}', [SuministroController::class, 'getById'])->name('suministro.get');
     Route::get('/departamentos', [SuministroController::class, 'getDepartamentos'])->name('suministro.departamentos');
     Route::get('/provincias/{departamento_id}', [SuministroController::class, 'getProvincias'])->name('suministro.provincias');
     Route::get('/distritos/{provincia_id}', [SuministroController::class, 'getDistritos'])->name('suministro.distritos');
@@ -522,6 +553,7 @@ Route::prefix('cuadrillas')->group(function () {
     // Rutas para gestión de empleados en cuadrillas (paramétricos)
     Route::get('/{cuadrilla}/empleados/data', [CuadrillaEmpleadoController::class, 'getEmpleadosAsignados'])->name('cuadrillas.empleados.data');
     Route::get('/{cuadrilla}/empleados/disponibles', [CuadrillaEmpleadoController::class, 'getEmpleadosDisponibles'])->name('cuadrillas.empleados.disponibles');
+    Route::get('/{cuadrilla}/empleados', [CuadrillaEmpleadoController::class, 'show'])->name('cuadrillas.empleados.show');
     Route::post('/empleados/asignar', [CuadrillaEmpleadoController::class, 'asignarEmpleado'])->name('cuadrillas.empleados.asignar');
     Route::put('/empleados/{asignacion}/toggle', [CuadrillaEmpleadoController::class, 'toggleEstado'])->name('cuadrillas.empleados.toggle');
     Route::delete('/empleados/{asignacion}', [CuadrillaEmpleadoController::class, 'removeEmpleado'])->name('cuadrillas.empleados.remove');

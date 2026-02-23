@@ -35,6 +35,47 @@ class Suministro extends Model
         'updated_at' => 'datetime'
     ];
 
+    // ===== EVENTOS PARA SINCRONIZAR ESTADO DE MEDIDORES =====
+    
+    protected static function boot()
+    {
+        parent::boot();
+        
+        // Al crear un suministro con medidor
+        static::creating(function ($model) {
+            if ($model->medidor_id) {
+                Medidor::find($model->medidor_id)?->marcarAsignado();
+            }
+        });
+        
+        // Al actualizar un suministro (cambiar medidor)
+        static::updating(function ($model) {
+            // Si cambió el medidor_id
+            if ($model->isDirty('medidor_id')) {
+                $medidorAnterior = $model->getOriginal('medidor_id');
+                $medidorNuevo = $model->medidor_id;
+                
+                // Liberar el medidor anterior (marcarlo disponible)
+                if ($medidorAnterior) {
+                    Medidor::find($medidorAnterior)?->marcarDisponible();
+                }
+                
+                // Asignar el nuevo medidor
+                if ($medidorNuevo) {
+                    Medidor::find($medidorNuevo)?->marcarAsignado();
+                }
+            }
+        });
+        
+        // Al eliminar un suministro
+        static::deleting(function ($model) {
+            // Liberar el medidor
+            if ($model->medidor_id) {
+                Medidor::find($model->medidor_id)?->marcarDisponible();
+            }
+        });
+    }
+
     // Relación con Medidor
     public function medidor()
     {

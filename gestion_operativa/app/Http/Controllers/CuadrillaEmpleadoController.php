@@ -191,7 +191,7 @@ class CuadrillaEmpleadoController extends Controller
         $fichaId = $request->get('ficha_id', null);
         $perPage = 10;
 
-        // Solo excluir empleados ya agregados a ESTA FICHA (no a la cuadrilla en general)
+        // Obtener IDs de empleados YA EN ESTA FICHA para excluirlos
         $empleadosEnFicha = [];
         if ($fichaId) {
             // Obtener los CuadrillaEmpleado IDs agregados a la ficha
@@ -208,18 +208,17 @@ class CuadrillaEmpleadoController extends Controller
             }
         }
 
-        // Obtener empleados disponibles para esta cuadrilla
-        // (todos los empleados activos excepto los que ya están asignados activamente a esta cuadrilla)
+        // Obtener IDs de empleados ASIGNADOS a esta cuadrilla (activos)
+        $empleadosEnCuadrilla = CuadrillaEmpleado::where('cuadrilla_id', $cuadrillaId)
+            ->where('estado', 1)
+            ->pluck('empleado_id')
+            ->toArray();
+
+        // Obtener empleados que ESTÁN asignados a esta cuadrilla, pero NO en esta ficha
         $query = Empleado::with(['cargo', 'area'])
             ->where('empleados.estado', true) // Solo empleados activos
-            ->whereNotIn('empleados.id', function($q) use ($cuadrillaId, $empleadosEnFicha) {
-                // Excluir empleados ya asignados activamente a esta cuadrilla
-                $q->select('empleado_id')
-                  ->from('cuadrillas_empleados')
-                  ->where('cuadrilla_id', $cuadrillaId)
-                  ->where('estado', 1);
-            })
-            ->whereNotIn('empleados.id', $empleadosEnFicha) // Excluir también los ya en la ficha
+            ->whereIn('empleados.id', $empleadosEnCuadrilla) // SOLO de esta cuadrilla
+            ->whereNotIn('empleados.id', $empleadosEnFicha) // Excepto los ya en la ficha
             ->orderBy('nombre');
 
         if (!empty($search)) {
@@ -265,6 +264,25 @@ class CuadrillaEmpleadoController extends Controller
                     'empleado_nombre' => $item->empleado ? $item->empleado->nombre . ' ' . $item->empleado->apellido : 'N/A'
                 ];
             });
+
+        return response()->json($cuadrillaEmpleados);
+    }
+
+    /**
+     * Get cuadrilla_empleado_id para una cuadrilla y empleado específicos
+     */
+    public function show(Request $request, $cuadrillaId)
+    {
+        $empleadoId = $request->get('empleado_id');
+
+        if (!$empleadoId) {
+            return response()->json([], 400);
+        }
+
+        $cuadrillaEmpleados = CuadrillaEmpleado::where('cuadrilla_id', $cuadrillaId)
+            ->where('empleado_id', $empleadoId)
+            ->where('estado', 1)
+            ->get(['id', 'empleado_id', 'cuadrilla_id']);
 
         return response()->json($cuadrillaEmpleados);
     }

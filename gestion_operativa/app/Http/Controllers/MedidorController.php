@@ -248,60 +248,96 @@ class MedidorController extends Controller
     {
         $fichaId = $request->get('ficha_id', null);
         $suministroId = $request->get('suministro_id', null);
+        $search = $request->input('q', ''); // Parámetro de búsqueda
         
-        // Si viene un ficha_id, excluir medidores ya utilizados en esa ficha
-        $medidoresEnFicha = [];
-        if ($fichaId) {
-            $medidoresEnFicha = \App\Models\MedidorFichaActividad::where('ficha_actividad_id', $fichaId)
-                ->pluck('medidor_id')
-                ->toArray();
-        }
-
-        // Si viene un suministro_id, obtener su medidor actual
-        $medidorActualSuministro = null;
+        // Obtener medidor actual del suministro (si existe)
+        $medidorActualId = null;
         if ($suministroId) {
-            $suministro = \App\Models\Suministro::find($suministroId);
-            $medidorActualSuministro = $suministro ? $suministro->medidor_id : null;
+            $medidorActualId = \App\Models\Suministro::find($suministroId)?->medidor_id;
         }
-
-        $query = Medidor::select('id', 'serie', 'modelo')
-            ->where('estado', 1);
-
-        // Si hay medidores en la ficha, excluirlos (excepto el actual del suministro)
-        if (!empty($medidoresEnFicha)) {
-            $medidoresAExcluir = array_diff($medidoresEnFicha, $medidorActualSuministro ? [$medidorActualSuministro] : []);
-            if (!empty($medidoresAExcluir)) {
-                $query->whereNotIn('id', $medidoresAExcluir);
-            }
-        }
-
-        // Excluir medidores ya asignados a otros suministros (excepto el actual)
-        $medidoresAsignados = \App\Models\Suministro::where('medidor_id', '!=', null)
-            ->when($medidorActualSuministro, function ($q) use ($medidorActualSuministro) {
-                return $q->where('medidor_id', '!=', $medidorActualSuministro);
+        
+        // ===== OPTIMIZACIÓN CON LEFT JOIN + BÚSQUEDA =====
+        // Consulta optimizada: usar LEFT JOIN en lugar de subqueries
+        // Evita traer todos los datos y filtrar en memoria
+        
+        $query = Medidor::select('medidors.id', 'medidors.serie', 'medidors.modelo')
+            ->disponibles() // Estado = 1 (disponibles)
+            ->leftJoin('medidor_ficha_actividades', function ($join) use ($fichaId) {
+                $join->on('medidor_ficha_actividades.medidor_id', '=', 'medidors.id');
+                if ($fichaId) {
+                    $join->where('medidor_ficha_actividades.ficha_actividad_id', '=', $fichaId);
+                }
             })
-            ->pluck('medidor_id')
-            ->toArray();
-
-        if (!empty($medidoresAsignados)) {
-            $query->whereNotIn('id', $medidoresAsignados);
+            ->whereNull('medidor_ficha_actividades.id'); // Medidores sin usar en ficha
+        
+        // ===== AGREGAR BÚSQUEDA =====
+        if (!empty($search)) {
+            $query->where(function($q) use ($search) {
+                $q->where('medidors.serie', 'LIKE', "%{$search}%")
+                  ->orWhere('medidors.modelo', 'LIKE', "%{$search}%");
+            });
         }
-
-        // Incluir el medidor actual del suministro si existe
-        if ($medidorActualSuministro) {
-            $query->orWhere('id', $medidorActualSuministro);
-        }
-
-        $medidores = $query->orderBy('serie')
+        
+        $medidores = $query
+            ->orderBy('medidors.serie')
+            ->limit(100) // Limitar a 100 resultados para mejor rendimiento
+            ->distinct()
             ->get()
             ->map(function ($item) {
                 return [
                     'id' => $item->id,
                     'serie' => $item->serie,
-                    'numero' => $item->serie . ' (' . $item->modelo . ')'
+                    'modelo' => $item->modelo,
+                    'text' => $item->serie . ' (' . $item->modelo . ')',
+                    'numero' => $item->serie . ' (' . $item->modelo . ')',
+                    'actual' => false,
+                    'data' => [
+                        'serie' => $item->serie,
+                        'modelo' => $item->modelo
+                    ]
                 ];
-            });
-
+            })
+            ->toArray();
+        
+        // ===== AGREGAR MEDIDOR ACTUAL DEL SUMINISTRO AL INICIO =====
+        // Si hay suministro_id, agregar su medidor actual al INICIO de la lista
+        // Esto hace que aparezca primero en el dropdown
+        if ($medidorActualId) {
+            $medidorActualEnLista = collect($medidores)
+                ->contains('id', $medidorActualId);
+            
+            $medidorActual = Medidor::find($medidorActualId);
+            if ($medidorActual) {
+                $medidoresOrdenados = [];
+                
+                // Agregar medidor actual al inicio con marca especial
+                $medidoresOrdenados[] = [
+                    'id' => $medidorActual->id,
+                    'serie' => $medidorActual->serie,
+                    'modelo' => $medidorActual->modelo,
+                    'text' => '⭐ ' . $medidorActual->serie . ' (' . $medidorActual->modelo . ') - [Medidor Actual]',
+                    'numero' => '⭐ ' . $medidorActual->serie . ' (' . $medidorActual->modelo . ')',
+                    'actual' => true,
+                    'data' => [
+                        'serie' => $medidorActual->serie,
+                        'modelo' => $medidorActual->modelo
+                    ]
+                ];
+                
+                // Agregar los demás medidores (sin el actual si estaba)
+                if ($medidorActualEnLista) {
+                    // Filtrar el medidor actual de la lista
+                    $medidores = array_filter($medidores, function($m) use ($medidorActualId) {
+                        return $m['id'] !== $medidorActualId;
+                    });
+                }
+                
+                // Concatenar: medidor actual + otros
+                $medidores = array_merge($medidoresOrdenados, array_values($medidores));
+            }
+        }
+        
         return response()->json($medidores);
     }
 }
+

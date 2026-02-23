@@ -65,17 +65,32 @@ class SuministroController extends Controller
         }
     }
 
-    public function getForSelect()
+    public function getForSelect(Request $request)
     {
         try {
-            $suministros = Suministro::select(['id', 'nombre'])
-                ->where('estado', true)
+            $search = $request->input('q', '');
+            
+            $query = Suministro::select(['id', 'codigo', 'nombre'])
+                ->where('estado', true);
+            
+            // Si hay búsqueda, filtrar por código o nombre
+            if (!empty($search)) {
+                $query->where(function($q) use ($search) {
+                    $q->where('codigo', 'LIKE', "%{$search}%")
+                      ->orWhere('nombre', 'LIKE', "%{$search}%");
+                });
+            }
+            
+            $suministros = $query
                 ->orderBy('nombre')
+                ->limit(100) // Limitar a 100 resultados para mejor rendimiento
                 ->get()
                 ->map(function ($suministro) {
                     return [
                         'id' => $suministro->id,
-                        'nombre' => $suministro->nombre
+                        'text' => $suministro->codigo . ' - ' . $suministro->nombre,
+                        'nombre' => $suministro->nombre,
+                        'codigo' => $suministro->codigo
                     ];
                 });
 
@@ -84,6 +99,41 @@ class SuministroController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener suministros'
+            ], 500);
+        }
+    }
+
+    public function getById($id)
+    {
+        try {
+            $suministro = Suministro::select([
+                'id',
+                'codigo',
+                'nombre',
+                'direccion',
+                'latitud',
+                'longitud',
+                'referencia'
+            ])
+            ->where('id', $id)
+            ->where('estado', true)
+            ->first();
+
+            if (!$suministro) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Suministro no encontrado'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $suministro
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener suministro: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -437,33 +487,37 @@ class SuministroController extends Controller
     }
     // ====== FIN: Obtener historial ======
 
-    // Obtener Medidores (que no estén asignados a otros suministros)
+    // Obtener Medidores Disponibles (estado = 1)
     public function getMedidores(Request $request)
     {
-        $suministro_id = $request->query('suministro_id'); // Para edición, excluir el actual
+        $suministro_id = $request->query('suministro_id'); // Para edición, incluir el medidor actual
         
-        // Obtener IDs de medidores ya asignados a suministros
-        $medidoresAsignados = Suministro::whereNotNull('medidor_id')
-            ->when($suministro_id, function ($q) use ($suministro_id) {
-                // Si es edición, excluir el suministro actual para permitir su medidor
-                return $q->where('id', '!=', $suministro_id);
-            })
-            ->pluck('medidor_id')
-            ->toArray();
-        
-        // Obtener medidores disponibles (no asignados y activos)
-        $medidores = Medidor::where('estado', true)
-            ->whereNotIn('id', $medidoresAsignados)
+        // Consulta optimizada: obtener solo medidores con estado 1 (disponibles)
+        $query = Medidor::disponibles() // Usar scope para estado = 1
             ->select('id', 'serie')
-            ->orderBy('serie')
-            ->get()
+            ->orderBy('serie');
+        
+        // Si es edición, también incluir el medidor actualmente asignado a este suministro
+        if ($suministro_id) {
+            $suministro = Suministro::find($suministro_id);
+            if ($suministro && $suministro->medidor_id) {
+                // Obtener medidores disponibles O el medidor actualmente asignado a este suministro
+                $query = Medidor::where(function ($q) {
+                    $q->where('medidors.estado', 1); // Disponibles
+                })->orWhere('medidors.id', $suministro->medidor_id) // O el medidor actual
+                    ->select('id', 'serie')
+                    ->orderBy('serie');
+            }
+        }
+        
+        $medidores = $query->get()
             ->map(function ($item) {
                 return [
                     'id' => $item->id,
                     'text' => $item->serie
                 ];
             });
-
+        
         return response()->json($medidores);
     }
 }

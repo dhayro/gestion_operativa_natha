@@ -338,14 +338,7 @@
                                 </div>
                             </div>
 
-                            <div class="row">
-                                <div class="col-md-12 mb-3">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" id="estado" name="estado" value="1" checked>
-                                        <label class="form-check-label" for="estado">Activo</label>
-                                    </div>
-                                </div>
-                            </div>
+
                         </div>
 
                         <!-- TAB: EMPLEADOS -->
@@ -435,7 +428,7 @@
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" onclick="guardarFicha()">Guardar Ficha</button>
+                    <button type="button" class="btn btn-primary" id="btnGuardarFicha" onclick="guardarFicha()">Guardar Ficha</button>
                 </div>
             </div>
         </div>
@@ -489,8 +482,8 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="medidor_id" class="form-label">Medidor <span class="text-danger">*</span></label>
-                        <select class="form-control" id="medidor_id" required>
-                            <option value="">Cargando...</option>
+                        <select class="form-control select2" id="medidor_id" name="medidor_id" required>
+                            <option value="">Seleccione un medidor</option>
                         </select>
                     </div>
 
@@ -545,8 +538,8 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="medidor_ficha_actividad_id" class="form-label">Medidor <span class="text-danger">*</span></label>
-                        <select class="form-control" id="medidor_ficha_actividad_id" required>
-                            <option value="">Cargando...</option>
+                        <select class="form-control select2" id="medidor_ficha_actividad_id" name="medidor_ficha_actividad_id" required>
+                            <option value="">Seleccione un medidor asignado</option>
                         </select>
                         <small class="form-text text-muted">Selecciona un medidor asignado a esta ficha</small>
                     </div>
@@ -569,8 +562,8 @@
 
                     <div class="mb-3">
                         <label for="precinto_material_id" class="form-label">Material (Precinto)</label>
-                        <select class="form-control" id="precinto_material_id">
-                            <option value="">Cargando...</option>
+                        <select class="form-control select2" id="precinto_material_id" name="precinto_material_id">
+                            <option value="">Seleccione un material</option>
                         </select>
                     </div>
                 </div>
@@ -725,6 +718,7 @@
     let fichaMapMarker = null;
     let evitarGuardoAutomatico = false; // Flag para prevenir guardos accidentales
     let autocompletePlaceFicha; // Variable para Google Places Autocomplete
+    let estadoInicialFicha = {}; // Guardar estado inicial para detectar cambios
 
     $(document).ready(function() {
         inicializarTabla();
@@ -766,20 +760,172 @@
     }
 
     function configurarSelect2() {
-        $('.select2').select2({
+        // Select2 estándar para otros campos
+        $('#tipo_propiedad_id, #construccion_id, #uso_id, #situacion_id, #servicio_electrico_id').select2({
             width: '100%',
             dropdownParent: $('#fichaModal')
+        });
+
+        // Select2 con búsqueda AJAX para Suministro
+        $('#suministro_id').select2({
+            width: '100%',
+            dropdownParent: $('#fichaModal'),
+            placeholder: 'Buscar por código o nombre...',
+            minimumInputLength: 0,
+            allowClear: true,
+            ajax: {
+                url: '/suministro/api/select',
+                dataType: 'json',
+                delay: 250,
+                data: function(params) {
+                    return {
+                        q: params.term || ''
+                    };
+                },
+                processResults: function(data) {
+                    return {
+                        results: data.map(function(item) {
+                            return {
+                                id: item.id,
+                                text: item.text
+                            };
+                        })
+                    };
+                },
+                cache: false
+            },
+            templateResult: function(data) {
+                return data.text;
+            },
+            templateSelection: function(data) {
+                return data.text;
+            }
+        });
+
+        // Evento para cargar datos del suministro cuando se selecciona
+        $('#suministro_id').on('change', function() {
+            const suministroId = $(this).val();
+            if (suministroId) {
+                cargarDatosSuministro(suministroId);
+                // Recargar medidores cuando cambia el suministro
+                cargarMedidoresSelect2(suministroId);
+            }
+        });
+
+        // Select2 con búsqueda AJAX para Medidor (igual que Suministro)
+        $('#medidor_id').select2({
+            width: '100%',
+            dropdownParent: $('#medidorModal'),
+            placeholder: 'Buscar por serie o modelo...',
+            minimumInputLength: 0,
+            allowClear: true,
+            ajax: {
+                url: function(params) {
+                    const fichaId = fichaActualId || '';
+                    const suministroId = $('#suministro_id').val() || '';
+                    return `/medidor/select?ficha_id=${fichaId}&suministro_id=${suministroId}`;
+                },
+                dataType: 'json',
+                delay: 250,
+                data: function(params) {
+                    return {
+                        q: params.term || ''
+                    };
+                },
+                processResults: function(data) {
+                    return {
+                        results: data.map(function(item) {
+                            return {
+                                id: item.id,
+                                text: item.text,
+                                actual: item.actual || false,
+                                serie: item.serie,
+                                modelo: item.modelo
+                            };
+                        })
+                    };
+                },
+                cache: false
+            },
+            templateResult: function(data) {
+                if (!data.id) return data.text;
+                
+                // Template para mostrar en dropdown
+                let html = data.text;
+                
+                // Si es el medidor actual, destacarlo
+                if (data.actual) {
+                    html = '<strong style="color: #28a745; font-weight: bold;">' + data.text + '</strong>';
+                }
+                
+                return $('<div style="padding: 5px 0;">' + html + '</div>');
+            },
+            templateSelection: function(data) {
+                // Lo que se muestra cuando está seleccionado
+                return data.text || data.texto;
+            }
+        });
+    }
+
+    function cargarDatosSuministro(suministroId) {
+        $.ajax({
+            url: '/suministro/api/get/' + suministroId,
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success && response.data) {
+                    const suministro = response.data;
+                    
+                    // Cargar dirección
+                    $('#direccion').val(suministro.direccion || '');
+                    
+                    // Cargar latitud y longitud
+                    $('#latitud').val(suministro.latitud || '');
+                    $('#longitud').val(suministro.longitud || '');
+                    
+                    // Actualizar el mapa si tenemos coordenadas válidas
+                    if (suministro.latitud && suministro.longitud) {
+                        const latlng = new google.maps.LatLng(
+                            parseFloat(suministro.latitud),
+                            parseFloat(suministro.longitud)
+                        );
+                        
+                        // Actualizar centro del mapa
+                        if (fichaMap) {
+                            fichaMap.setCenter(latlng);
+                            fichaMap.setZoom(16);
+                            
+                            // Eliminar marcador anterior
+                            if (fichaMapMarker) {
+                                fichaMapMarker.setMap(null);
+                            }
+                            
+                            // Crear nuevo marcador
+                            fichaMapMarker = new google.maps.Marker({
+                                position: latlng,
+                                map: fichaMap,
+                                draggable: true,
+                                title: suministro.nombre || 'Suministro'
+                            });
+                            
+                            // Evento para actualizar coordenadas al mover el marcador
+                            fichaMapMarker.addListener('dragend', function() {
+                                const pos = fichaMapMarker.getPosition();
+                                $('#latitud').val(pos.lat().toFixed(8));
+                                $('#longitud').val(pos.lng().toFixed(8));
+                            });
+                        }
+                    }
+                }
+            },
+            error: function() {
+                console.error('Error al cargar datos del suministro');
+            }
         });
     }
 
     function cargarOpciones() {
-        $.get('/suministro/api/select', function(data) {
-            var select = $('#suministro_id');
-            select.empty().append('<option value="">Seleccione un suministro</option>');
-            $.each(data, function(i, item) {
-                select.append(`<option value="${item.id}">${item.nombre}</option>`);
-            });
-        });
+        // Ya no cargar suministros aquí, Select2 maneja la búsqueda AJAX
 
         // Cargar árbol de actividades multinivel
         $.get('/tipos-actividad/con-hijos/select', function(data) {
@@ -964,6 +1110,35 @@
             google.maps.event.trigger(fichaMap, 'resize');
             fichaMap.setCenter(PUCALLPA_CENTER);
             fichaMap.setZoom(14);
+            
+            // Si estamos editando una ficha existente, bloquear el botón
+            const fichaId = $('#ficha_id').val();
+            const $btnGuardar = $('#btnGuardarFicha');
+            
+            if (fichaId) {
+                // Ficha existente → bloquear botón por defecto
+                guardarEstadoInicialFicha();
+                $btnGuardar.prop('disabled', true).html('Guardar Ficha');
+                console.log('🔒 Botón bloqueado: Ficha en edición (ID: ' + fichaId + ')');
+                
+                // Agregar listeners para detectar cambios
+                const camposMonitor = [
+                    '#tipo_actividad_id', '#suministro_id', '#tipo_propiedad_id',
+                    '#construccion_id', '#servicio_electrico_id', '#uso_id',
+                    '#numero_piso', '#situacion_id', '#situacion_detalle',
+                    '#suministro_derecho', '#suministro_izquierdo', '#latitud',
+                    '#longitud', '#direccion', '#observacion', '#documento', '#fecha'
+                ];
+                
+                camposMonitor.forEach(campo => {
+                    $(campo).on('change input', verificarCambiosFicha);
+                });
+                
+            } else {
+                // Ficha nueva → habilitar botón
+                $btnGuardar.prop('disabled', false).html('Guardar Ficha');
+                console.log('🔓 Botón habilitado: Nueva ficha');
+            }
         });
     }
 
@@ -973,7 +1148,6 @@
     // $('#fichaForm')[0].reset(); // No usar, #fichaForm es un div, no un form
     $('#latitud').val('');
     $('#longitud').val('');
-    $('#estado').prop('checked', true); // Siempre activo al crear
     $('#fichaModalLabel').text('Ficha de Actividad - Información General');
     limpiarDetalles();
 
@@ -1013,6 +1187,76 @@
         if (typeof limpiarCamposEspeciales === 'function') limpiarCamposEspeciales();
     }
 
+    /**
+     * Guardar estado inicial de los campos de la ficha
+     * para detectar cambios posteriores
+     */
+    function guardarEstadoInicialFicha() {
+        estadoInicialFicha = {
+            tipo_actividad_id: $('#tipo_actividad_id').val(),
+            suministro_id: $('#suministro_id').val(),
+            tipo_propiedad_id: $('#tipo_propiedad_id').val(),
+            construccion_id: $('#construccion_id').val(),
+            servicio_electrico_id: $('#servicio_electrico_id').val(),
+            uso_id: $('#uso_id').val(),
+            numero_piso: $('#numero_piso').val(),
+            situacion_id: $('#situacion_id').val(),
+            situacion_detalle: $('#situacion_detalle').val(),
+            suministro_derecho: $('#suministro_derecho').val(),
+            suministro_izquierdo: $('#suministro_izquierdo').val(),
+            latitud: $('#latitud').val(),
+            longitud: $('#longitud').val(),
+            direccion: $('#direccion').val(),
+            observacion: $('#observacion').val(),
+            documento: $('#documento').val(),
+            fecha: $('#fecha').val()
+        };
+        console.log('📸 Estado inicial guardado:', estadoInicialFicha);
+    }
+
+    /**
+     * Detectar si hay cambios en los campos de la ficha
+     * y habilitar el botón de guardar solo si hay cambios
+     */
+    function verificarCambiosFicha() {
+        const $btnGuardar = $('#btnGuardarFicha');
+        
+        // Si no hay ficha ID, el botón debe estar habilitado (crear nueva)
+        if (!$('#ficha_id').val()) {
+            $btnGuardar.prop('disabled', false);
+            return;
+        }
+        
+        // Comparar estado actual con el inicial
+        let hayCAMBIOS = false;
+        const camposClave = [
+            'tipo_actividad_id', 'suministro_id', 'tipo_propiedad_id',
+            'construccion_id', 'servicio_electrico_id', 'uso_id',
+            'numero_piso', 'situacion_id', 'situacion_detalle',
+            'suministro_derecho', 'suministro_izquierdo', 'latitud',
+            'longitud', 'direccion', 'observacion', 'documento', 'fecha'
+        ];
+        
+        for (let campo of camposClave) {
+            const valorActual = $(`#${campo}`).val();
+            const valorInicial = estadoInicialFicha[campo];
+            if (valorActual !== valorInicial) {
+                hayCAMBIOS = true;
+                console.log(`⚠️ Cambio detectado en ${campo}: "${valorInicial}" → "${valorActual}"`);
+                break;
+            }
+        }
+        
+        // Habilitar botón solo si hay cambios
+        if (hayCAMBIOS) {
+            $btnGuardar.prop('disabled', false).css('opacity', '1');
+            console.log('✅ Botón HABILITADO: Cambios detectados');
+        } else {
+            $btnGuardar.prop('disabled', true).css('opacity', '0.6');
+            console.log('🔒 Botón BLOQUEADO: Sin cambios');
+        }
+    }
+
     function limpiarDetalles() {
         $('#empleadosList').html('');
         $('#medidoresList').html('');
@@ -1033,6 +1277,11 @@
 
         console.log('✅ Procediendo a guardar ficha...');
 
+        // Desabilitar el botón para prevenir clics múltiples
+        const $btnGuardar = $('#btnGuardarFicha');
+        $btnGuardar.prop('disabled', true);
+        $btnGuardar.html('<span class="spinner-border spinner-border-sm me-2"></span>Guardando...');
+
         const data = {
             tipo_actividad_id: $('#tipo_actividad_id').val(),
             suministro_id: $('#suministro_id').val(),
@@ -1051,7 +1300,7 @@
             observacion: $('#observacion').val() || null,
             documento: $('#documento').val() || null,
             fecha: $('#fecha').val() || null,
-            estado: $('#estado').is(':checked') ? 1 : 0
+            estado: 1  // Siempre activo por defecto
         };
 
         const id = $('#ficha_id').val();
@@ -1075,10 +1324,18 @@
                     $('#fichaTable').DataTable().ajax.reload();
                 }
                 // No cerrar el modal automáticamente
+                // Actualizar estado inicial y bloquear botón
+                guardarEstadoInicialFicha();
+                $btnGuardar.prop('disabled', true).css('opacity', '0.6');
+                $btnGuardar.html('Guardar Ficha');
+                console.log('✅ Guardado exitoso. Botón bloqueado nuevamente.');
             },
             error: function(xhr) {
                 const msg = xhr.responseJSON?.message || 'Error al guardar';
                 Swal.fire('Error', msg, 'error');
+                // Re-habilitar el botón en caso de error
+                $btnGuardar.prop('disabled', false);
+                $btnGuardar.html('Guardar Ficha');
             }
         });
     }
@@ -1183,7 +1440,6 @@
                 $('#longitud').val(ficha.longitud || '');
                 $('#observacion').val(ficha.observacion || '');
                 $('#documento').val(ficha.documento || '');
-                $('#estado').prop('checked', ficha.estado ? true : false);
                 if (ficha.fecha) {
                     $('#fecha').val(ficha.fecha.substring(0, 16));
                 }
@@ -1478,8 +1734,25 @@
             Swal.fire('Aviso', 'Primero guarda la ficha principal', 'warning');
             return;
         }
-        cargarCuadrillasEmpleados();
-        $('#empleadoModal').modal('show');
+
+        // Obtener los empleados ya asignados para detectar la cuadrilla
+        $.get(`/fichas-actividad/${fichaActualId}/detalles/empleados`, function(response) {
+            let cuadrillaPreseleccionada = null;
+            
+            // Si ya hay empleados, usar la cuadrilla del primero
+            if (response.data && response.data.length > 0) {
+                cuadrillaPreseleccionada = response.data[0].cuadrilla_empleado?.cuadrilla?.id;
+            }
+            
+            // Guardar en una variable global para usar en cargarCuadrillasEmpleados
+            window.cuadrillaFijaId = cuadrillaPreseleccionada;
+            
+            cargarCuadrillasEmpleados();
+            $('#empleadoModal').modal('show');
+        }).fail(function(error) {
+            console.error('Error:', error);
+            Swal.fire('Error', 'No se pudieron cargar los empleados existentes', 'error');
+        });
     }
 
     function showMedidorForm() {
@@ -1487,7 +1760,9 @@
             Swal.fire('Aviso', 'Primero guarda la ficha principal', 'warning');
             return;
         }
-        cargarMedidoresDisponibles();
+        // Cargar el Select2 de medidores con AJAX
+        const suministroId = $('#suministro_id').val();
+        cargarMedidoresSelect2(suministroId);
         $('#medidorModal').modal('show');
     }
 
@@ -1549,97 +1824,259 @@
     // ===== CARGAR OPCIONES PARA MODALES =====
 
     function cargarCuadrillasEmpleados() {
-        console.log('✓ Iniciando carga de cuadrilla del usuario autenticado...');
+        console.log('✓ Iniciando carga de cuadrillas...');
         
-        // Obtener SOLO la cuadrilla del usuario autenticado
+        // Si hay una cuadrilla fija (porque ya hay empleados asignados), usarla directamente
+        if (window.cuadrillaFijaId) {
+            console.log('🔒 Usando cuadrilla fija:', window.cuadrillaFijaId);
+            
+            // Obtener el nombre de la cuadrilla
+            $.get(`/api/cuadrillas/${window.cuadrillaFijaId}`, function(cuadrilla) {
+                // Destruir Select2 anterior si existe
+                if ($('#cuadrilla_seleccionada').data('select2')) {
+                    $('#cuadrilla_seleccionada').select2('destroy');
+                }
+                
+                // Mostrar la cuadrilla con valor seleccionado
+                $('#cuadrilla_seleccionada').html(`<option value="${cuadrilla.id}" selected>${cuadrilla.nombre}</option>`);
+                
+                // Crear Select2 como read-only (disabled)
+                $('#cuadrilla_seleccionada').select2({
+                    width: '100%',
+                    dropdownParent: $('#empleadoModal'),
+                    disabled: true // Desactivado para que no se pueda cambiar
+                });
+                
+                console.log('✓ Cuadrilla bloqueada:', cuadrilla.nombre);
+                
+                // Cargar empleados de esta cuadrilla automáticamente
+                cargarEmpleadosDeCuadrilla();
+            }).fail(function(error) {
+                console.error('✗ Error obteniendo cuadrilla:', error);
+                Swal.fire('Error', 'No se pudo obtener la información de la cuadrilla', 'error');
+            });
+            return;
+        }
+        
+        // Si NO hay cuadrilla fija (primera vez), mostrar opciones de selección
+        // Obtener información del usuario autenticado
         $.get('/api/user/me', function(userResponse) {
             console.log('👤 Usuario autenticado:', userResponse);
             
-            if (!userResponse.cuadrilla || !userResponse.cuadrilla.id) {
-                Swal.fire('Error', 'Tu usuario no tiene cuadrilla asignada', 'error');
-                return;
+            // Si es admin o supervisor, cargar todas las cuadrillas con búsqueda AJAX
+            if (userResponse.is_admin_or_supervisor) {
+                console.log('✓ Usuario es admin/supervisor - configurando select con búsqueda AJAX');
+                
+                // Destruir Select2 anterior si existe
+                if ($('#cuadrilla_seleccionada').data('select2')) {
+                    $('#cuadrilla_seleccionada').select2('destroy');
+                }
+                
+                // Configurar Select2 con búsqueda AJAX - Mismo formato que Suministro
+                $('#cuadrilla_seleccionada').select2({
+                    width: '100%',
+                    dropdownParent: $('#empleadoModal'),
+                    placeholder: 'Buscar cuadrilla...',
+                    minimumInputLength: 0,
+                    allowClear: true,
+                    ajax: {
+                        url: '/cuadrillas/api/select',
+                        dataType: 'json',
+                        delay: 250,
+                        data: function(params) {
+                            return {
+                                search: params.term || ''
+                            };
+                        },
+                        processResults: function(data) {
+                            return {
+                                results: (data.results || data || []).map(function(item) {
+                                    return {
+                                        id: item.id,
+                                        text: item.text
+                                    };
+                                })
+                            };
+                        },
+                        cache: false
+                    },
+                    templateResult: function(data) {
+                        return data.text;
+                    },
+                    templateSelection: function(data) {
+                        return data.text;
+                    }
+                });
+                
+                // Remover evento anterior si existe
+                $('#cuadrilla_seleccionada').off('change.select2');
+                
+                // Evento para cargar empleados al seleccionar cuadrilla (con Select2)
+                $('#cuadrilla_seleccionada').on('change.select2', function() {
+                    console.log('✓ Cuadrilla seleccionada:', $(this).val());
+                    if ($(this).val()) {
+                        cargarEmpleadosDeCuadrilla();
+                    } else {
+                        // Limpiar empleados si se deselecciona
+                        if ($('#cuadrilla_empleado_id').data('select2')) {
+                            $('#cuadrilla_empleado_id').select2('destroy');
+                        }
+                        $('#cuadrilla_empleado_id').val('').trigger('change');
+                    }
+                });
+            } else {
+                // Para operarios/técnicos, mostrar solo su cuadrilla
+                if (!userResponse.cuadrilla || !userResponse.cuadrilla.id) {
+                    Swal.fire('Error', 'Tu usuario no tiene cuadrilla asignada', 'error');
+                    return;
+                }
+                
+                const cuadrilla = userResponse.cuadrilla;
+                const cuadrillaId = cuadrilla.id;
+                
+                // Destruir Select2 anterior si existe
+                if ($('#cuadrilla_seleccionada').data('select2')) {
+                    $('#cuadrilla_seleccionada').select2('destroy');
+                }
+                
+                // Mostrar SOLO tu cuadrilla en el select con Select2
+                $('#cuadrilla_seleccionada').html(`<option value="${cuadrillaId}" selected>${cuadrilla.nombre}</option>`);
+                
+                $('#cuadrilla_seleccionada').select2({
+                    width: '100%',
+                    dropdownParent: $('#empleadoModal'),
+                    minimumInputLength: 999 // Desactivar búsqueda, es read-only
+                });
+                
+                // Remover evento anterior si existe
+                $('#cuadrilla_seleccionada').off('change.select2');
+                
+                // Evento para cargar empleados
+                $('#cuadrilla_seleccionada').on('change.select2', function() {
+                    if ($(this).val()) {
+                        cargarEmpleadosDeCuadrilla();
+                    }
+                });
+                
+                console.log('✓ Tu cuadrilla mostrada:', cuadrilla.nombre);
+                
+                // Cargar empleados de tu cuadrilla automáticamente
+                cargarEmpleadosDeCuadrilla();
             }
-            
-            const cuadrilla = userResponse.cuadrilla;
-            const cuadrillaId = cuadrilla.id;
-            
-            // Mostrar SOLO tu cuadrilla en el select
-            let html = `<option value="${cuadrillaId}" selected>${cuadrilla.nombre}</option>`;
-            $('#cuadrilla_seleccionada').html(html);
-            console.log('✓ Tu cuadrilla mostrada:', cuadrilla.nombre);
-            
-            // Cargar empleados de tu cuadrilla automáticamente
-            cargarEmpleadosDeCuadrilla();
         }).fail(function(error) {
-            console.error('✗ Error obteniendo cuadrilla del usuario:', error);
-            Swal.fire('Error', 'No se pudo obtener tu información de cuadrilla', 'error');
+            console.error('✗ Error obteniendo información del usuario:', error);
+            Swal.fire('Error', 'No se pudo obtener tu información', 'error');
         });
     }
 
     function cargarEmpleadosDeCuadrilla() {
         const cuadrillaId = $('#cuadrilla_seleccionada').val();
-        console.log('✓ Cargando empleados de tu cuadrilla:', cuadrillaId);
+        console.log('✓ Cargando empleados de cuadrilla:', cuadrillaId);
 
         // Si no hay cuadrilla seleccionada, limpiar
         if (!cuadrillaId) {
-            $('#cuadrilla_empleado_id')
-                .html('<option value="">-- Selecciona una cuadrilla primero --</option>')
-                .prop('disabled', true);
             console.log('✗ No hay cuadrilla seleccionada');
+            if ($('#cuadrilla_empleado_id').data('select2')) {
+                $('#cuadrilla_empleado_id').select2('destroy');
+            }
+            $('#cuadrilla_empleado_id').html('<option value="">-- Selecciona una cuadrilla primero --</option>').prop('disabled', true);
             return;
         }
 
-        // Cargar empleados de la cuadrilla seleccionada
-        // Pasar fichaActualId para excluir empleados ya agregados a esta ficha
-        $.get(`/cuadrillas/${cuadrillaId}/empleados/disponibles?ficha_id=${fichaActualId}`, function(data) {
-            console.log('✓ Empleados de tu cuadrilla cargados:', data);
-            
-            // El API retorna {results: [...], pagination: {...}}
-            const empleados = data.results || data || [];
-            console.log('✓ Empleados a procesar:', empleados);
-            
-            let html = '<option value="">-- Selecciona un empleado --</option>';
+        // Destruir Select2 anterior si existe
+        if ($('#cuadrilla_empleado_id').data('select2')) {
+            $('#cuadrilla_empleado_id').select2('destroy');
+        }
 
-            if (empleados.length === 0) {
-                html = '<option value="">No hay empleados disponibles en esta cuadrilla</option>';
-                $('#cuadrilla_empleado_id').html(html).prop('disabled', true);
-                console.log('⚠ No hay empleados disponibles');
-            } else {
-                $.each(empleados, function(i, item) {
-                    html += `<option value="${item.id}">${item.text}</option>`;
-                });
-                $('#cuadrilla_empleado_id').html(html).prop('disabled', false);
-                console.log('✓ Select de empleados actualizado con', empleados.length, 'empleados');
+        // Habilitar el select
+        $('#cuadrilla_empleado_id').prop('disabled', false);
+
+        // Configurar Select2 con búsqueda AJAX para empleados - Mismo formato que Suministro
+        $('#cuadrilla_empleado_id').select2({
+            width: '100%',
+            dropdownParent: $('#empleadoModal'),
+            placeholder: 'Buscar empleado...',
+            minimumInputLength: 0,
+            allowClear: true,
+            ajax: {
+                url: `/cuadrillas/${cuadrillaId}/empleados/disponibles`,
+                dataType: 'json',
+                delay: 250,
+                data: function(params) {
+                    return {
+                        search: params.term || '',
+                        ficha_id: fichaActualId || ''
+                    };
+                },
+                processResults: function(data) {
+                    console.log('📦 Respuesta del servidor:', data);
+                    // El endpoint retorna {results: [...]} o directamente array
+                    const empleados = data.results || data || [];
+                    console.log('👥 Empleados procesados:', empleados.length);
+                    return {
+                        results: empleados.map(function(item) {
+                            return {
+                                id: item.id,
+                                text: item.text || item.nombre
+                            };
+                        })
+                    };
+                },
+                cache: false,
+                error: function(error) {
+                    console.error('✗ Error en AJAX:', error);
+                    Swal.fire('Error', 'No se pudieron cargar los empleados', 'error');
+                }
+            },
+            templateResult: function(data) {
+                return data.text;
+            },
+            templateSelection: function(data) {
+                return data.text;
             }
-        }).fail(function(error) {
-            console.error('✗ Error cargando empleados:', error);
-            Swal.fire('Error', 'No se pudieron cargar los empleados de la cuadrilla', 'error');
-            $('#cuadrilla_empleado_id').prop('disabled', true);
         });
+
+        console.log('✓ Select2 de empleados configurado para cuadrilla:', cuadrillaId);
     }
 
-    function cargarMedidoresDisponibles() {
-        var suministroId = $('#suministro_id').val();
-        $.get(`/medidor/select?ficha_id=${fichaActualId}&suministro_id=${suministroId}`, function(data) {
-            console.log('✓ Medidores disponibles cargados:', data);
-            let html = '<option value="">-- Selecciona un medidor --</option>';
-            $.each(data, function(i, item) {
-                html += `<option value="${item.id}">${item.numero}</option>`;
-            });
-            $('#medidor_id').html(html);
-        }).fail(function(error) {
-            console.error('✗ Error cargando medidores:', error);
-            Swal.fire('Error', 'No se pudieron cargar los medidores', 'error');
-        });
+    function cargarMedidoresSelect2(suministroId) {
+        // La carga ahora es automática vía Select2 AJAX
+        // Solo trigger para recargar el dropdown
+        $('#medidor_id').val(null).trigger('change');
+        console.log('✓ Select2 de medidores actualizado para suministro:', suministroId);
     }
 
     function cargarMedidoresAsignados() {
+        // Cargar medidores asignados via Select2 AJAX
         $.get(`/fichas-actividad/${fichaActualId}/detalles/medidores`, function(response) {
-            let html = '<option value="">-- Selecciona un medidor --</option>';
-            $.each(response.data, function(i, item) {
-                html += `<option value="${item.id}">${item.medidor.serie} - ${item.medidor.modelo} (${item.tipo})</option>`;
+            // Preparar datos para Select2
+            let medidores = response.data.map(function(item) {
+                return {
+                    id: item.id,
+                    text: item.medidor.serie + ' - ' + item.medidor.modelo + ' (' + item.tipo + ')',
+                    serie: item.medidor.serie,
+                    modelo: item.medidor.modelo,
+                    tipo: item.tipo
+                };
             });
-            $('#medidor_ficha_actividad_id').html(html);
+            
+            // Limpiar el select y agregar opciones
+            $('#medidor_ficha_actividad_id').empty();
+            
+            // Agregar opción vacía
+            $('#medidor_ficha_actividad_id').append(
+                new Option('Seleccione un medidor asignado', '')
+            );
+            
+            // Agregar medidores
+            $.each(medidores, function(i, item) {
+                $('#medidor_ficha_actividad_id').append(
+                    new Option(item.text, item.id)
+                );
+            });
+            
+            // Trigger change para actualizar Select2
+            $('#medidor_ficha_actividad_id').trigger('change');
         }).fail(function() {
             Swal.fire('Error', 'No se pudieron cargar los medidores asignados', 'error');
         });
@@ -1647,27 +2084,53 @@
 
     function cargarMaterialesParaPrecintos() {
         $.get('/materiales/select', function(data) {
-            let html = '<option value="">-- Selecciona un material (precinto) --</option>';
-            let primerMaterial = null;
-            $.each(data, function(i, item) {
-                // Solo mostrar materiales que inicien con "precinto" (case-insensitive)
-                if (item.nombre.toLowerCase().startsWith('precinto')) {
-                    html += `<option value="${item.id}">${item.nombre}</option>`;
-                    // Guardar el primero encontrado
-                    if (!primerMaterial) {
-                        primerMaterial = item.id;
-                    }
-                }
+            // Filtrar solo precintos
+            let precintos = data.filter(function(item) {
+                return item.nombre.toLowerCase().startsWith('precinto');
+            }).map(function(item) {
+                return {
+                    id: item.id,
+                    text: item.nombre
+                };
             });
-            $('#precinto_material_id').html(html);
-            // Seleccionar automáticamente el primer material si existe
-            if (primerMaterial) {
-                $('#precinto_material_id').val(primerMaterial);
-            }
+            
+            // Limpiar el select y agregar opciones
+            $('#precinto_material_id').empty();
+            
+            // Agregar opción vacía
+            $('#precinto_material_id').append(
+                new Option('Seleccione un material', '')
+            );
+            
+            // Agregar materiales (precintos)
+            $.each(precintos, function(i, item) {
+                $('#precinto_material_id').append(
+                    new Option(item.text, item.id)
+                );
+            });
+            
+            // Trigger change para actualizar Select2
+            $('#precinto_material_id').trigger('change');
         }).fail(function() {
-            Swal.fire('Error', 'No se pudieron cargar los materiales', 'error');
+            console.error('Error cargando materiales para precintos');
         });
     }
+    
+    // Configurar Select2 para medidores asignados
+    $('#medidor_ficha_actividad_id').select2({
+        width: '100%',
+        dropdownParent: $('#precintoModal'),
+        placeholder: 'Buscar medidor...',
+        allowClear: true
+    });
+    
+    // Configurar Select2 para materiales (precintos)
+    $('#precinto_material_id').select2({
+        width: '100%',
+        dropdownParent: $('#precintoModal'),
+        placeholder: 'Buscar material/precinto...',
+        allowClear: true
+    });
 
     function cargarMaterialesDisponibles() {
         const select = $('#material_id_detalle');
@@ -1784,54 +2247,76 @@
 
     function guardarEmpleado() {
         const cuadrilla_id = $('#cuadrilla_seleccionada').val();
-        const cuadrilla_empleado_id = $('#cuadrilla_empleado_id').val();
+        const empleado_id = $('#cuadrilla_empleado_id').val(); // Ahora es empleado_id directo
 
         if (!cuadrilla_id) {
             Swal.fire('Error', 'Selecciona una cuadrilla', 'error');
             return;
         }
 
-        if (!cuadrilla_empleado_id) {
+        if (!empleado_id) {
             Swal.fire('Error', 'Selecciona un empleado', 'error');
             return;
         }
 
+        // Obtener el cuadrilla_empleado_id basado en cuadrilla_id y empleado_id
         $.ajax({
-            url: `/fichas-actividad/${fichaActualId}/detalles/empleados`,
-            type: 'POST',
+            url: `/cuadrillas/${cuadrilla_id}/empleados`,
+            type: 'GET',
             headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-            data: { 
-                cuadrilla_empleado_id: cuadrilla_empleado_id 
-            },
-            success: function() {
-                // Mostrar notificación
-                const Toast = Swal.mixin({
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 2000,
-                    timerProgressBar: true
-                });
-                Toast.fire({
-                    icon: 'success',
-                    title: 'Empleado agregado correctamente'
-                });
-                
-                // Recargar empleados en la tabla principal
-                cargarEmpleados(fichaActualId);
-                
-                // Limpiar los selects
-                $('#cuadrilla_seleccionada').val('').trigger('change');
-                $('#cuadrilla_empleado_id').val('').trigger('change');
-                
-                // Cerrar el modal de empleado
-                const empleadoModal = bootstrap.Modal.getInstance(document.getElementById('empleadoModal'));
-                if (empleadoModal) {
-                    empleadoModal.hide();
+            data: { empleado_id: empleado_id },
+            success: function(data) {
+                const cuadrillaEmpleado = data[0]; // Obtener el primer resultado
+                if (!cuadrillaEmpleado) {
+                    Swal.fire('Error', 'No se encontró la relación cuadrilla-empleado', 'error');
+                    return;
                 }
+
+                // Ahora agregar a la ficha con el cuadrilla_empleado_id correcto
+                $.ajax({
+                    url: `/fichas-actividad/${fichaActualId}/detalles/empleados`,
+                    type: 'POST',
+                    headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                    data: { 
+                        cuadrilla_empleado_id: cuadrillaEmpleado.id
+                    },
+                    success: function() {
+                        // Mostrar notificación
+                        const Toast = Swal.mixin({
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 2000,
+                            timerProgressBar: true
+                        });
+                        Toast.fire({
+                            icon: 'success',
+                            title: 'Empleado agregado correctamente'
+                        });
+                        
+                        // Recargar empleados en la tabla principal
+                        cargarEmpleados(fichaActualId);
+                        
+                        // Limpiar los selects
+                        $('#cuadrilla_seleccionada').val('').trigger('change');
+                        $('#cuadrilla_empleado_id').val('').trigger('change');
+                        
+                        // Limpiar variable global de cuadrilla fija
+                        window.cuadrillaFijaId = null;
+                        
+                        // Cerrar el modal de empleado
+                        const empleadoModal = bootstrap.Modal.getInstance(document.getElementById('empleadoModal'));
+                        if (empleadoModal) {
+                            empleadoModal.hide();
+                        }
+                    },
+                    error: function(xhr) {
+                        Swal.fire('Error', xhr.responseJSON?.message || 'Error al agregar', 'error');
+                    }
+                });
             },
             error: function(xhr) {
-                Swal.fire('Error', xhr.responseJSON?.message || 'Error al agregar', 'error');
+                Swal.fire('Error', 'Error al obtener información del empleado', 'error');
             }
         });
     }
