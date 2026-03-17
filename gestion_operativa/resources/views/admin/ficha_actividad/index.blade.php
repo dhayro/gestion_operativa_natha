@@ -1117,7 +1117,7 @@
             
             if (fichaId) {
                 // Ficha existente → bloquear botón por defecto
-                guardarEstadoInicialFicha();
+                guardarEstadoInicialFicha(); 
                 $btnGuardar.prop('disabled', true).html('Guardar Ficha');
                 console.log('🔒 Botón bloqueado: Ficha en edición (ID: ' + fichaId + ')');
                 
