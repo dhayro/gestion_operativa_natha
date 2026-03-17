@@ -2734,7 +2734,8 @@
             contentType: false,
             processData: false,
             data: formData,
-            success: function() {
+            success: function(response) {
+                console.log('✅ Foto subida exitosamente:', response);
                 const Toast = Swal.mixin({
                     toast: true,
                     position: 'top-end',
@@ -2756,9 +2757,36 @@
                     fotoModal.hide();
                 }
             },
-            error: function(xhr) {
-                console.error('Error response:', xhr.responseJSON);
-                Swal.fire('Error', xhr.responseJSON?.message || 'Error al subir la foto', 'error');
+            error: function(xhr, status, error) {
+                console.error('❌ Error al subir foto:', {
+                    status: xhr.status,
+                    statusText: xhr.statusText,
+                    responseText: xhr.responseText,
+                    responseJSON: xhr.responseJSON,
+                    error: error
+                });
+                
+                // Intentar extraer mensaje de error
+                let mensajeError = 'Error al subir la foto';
+                
+                if (xhr.responseJSON?.message) {
+                    mensajeError = xhr.responseJSON.message;
+                } else if (xhr.responseText) {
+                    try {
+                        const parsed = JSON.parse(xhr.responseText);
+                        mensajeError = parsed.message || xhr.responseText;
+                    } catch (e) {
+                        mensajeError = xhr.responseText.substring(0, 200);
+                    }
+                } else if (xhr.status === 0) {
+                    mensajeError = 'Error de conexión. Verifica que el servidor esté corriendo.';
+                } else if (xhr.status === 413) {
+                    mensajeError = 'Archivo demasiado grande. Máximo 5MB.';
+                } else if (xhr.status === 422) {
+                    mensajeError = 'Datos inválidos. Verifica el archivo.';
+                }
+                
+                Swal.fire('Error', mensajeError, 'error');
             }
         });
     }
