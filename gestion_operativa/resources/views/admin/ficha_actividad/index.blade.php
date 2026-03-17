@@ -2734,8 +2734,24 @@
             contentType: false,
             processData: false,
             data: formData,
+            dataType: 'html', // Recibir como HTML primero (puede tener PHP notices)
             success: function(response) {
-                console.log('✅ Foto subida exitosamente:', response);
+                console.log('✅ Respuesta recibida (status 201+)');
+                
+                // Intentar extraer JSON de la respuesta (puede tener HTML antes)
+                let data = null;
+                try {
+                    // Buscar el JSON en la respuesta (normalmente al final)
+                    const jsonMatch = response.match(/\{[\s\S]*\}$/);
+                    if (jsonMatch) {
+                        data = JSON.parse(jsonMatch[0]);
+                        console.log('✅ JSON extraído correctamente:', data);
+                    }
+                } catch (e) {
+                    console.warn('⚠️ No se pudo extraer JSON, pero la foto se guardó (status 201)');
+                }
+                
+                // La foto se guardó (status 201), mostrar éxito
                 const Toast = Swal.mixin({
                     toast: true,
                     position: 'top-end',
@@ -2761,29 +2777,31 @@
                 console.error('❌ Error al subir foto:', {
                     status: xhr.status,
                     statusText: xhr.statusText,
-                    responseText: xhr.responseText,
-                    responseJSON: xhr.responseJSON,
+                    responseText: xhr.responseText ? xhr.responseText.substring(0, 300) : 'sin respuesta',
                     error: error
                 });
                 
                 // Intentar extraer mensaje de error
                 let mensajeError = 'Error al subir la foto';
                 
-                if (xhr.responseJSON?.message) {
-                    mensajeError = xhr.responseJSON.message;
-                } else if (xhr.responseText) {
-                    try {
-                        const parsed = JSON.parse(xhr.responseText);
-                        mensajeError = parsed.message || xhr.responseText;
-                    } catch (e) {
-                        mensajeError = xhr.responseText.substring(0, 200);
+                // Intentar extraer JSON del error
+                try {
+                    const jsonMatch = xhr.responseText.match(/\{[\s\S]*\}$/);
+                    if (jsonMatch) {
+                        const parsed = JSON.parse(jsonMatch[0]);
+                        mensajeError = parsed.message || mensajeError;
                     }
-                } else if (xhr.status === 0) {
-                    mensajeError = 'Error de conexión. Verifica que el servidor esté corriendo.';
-                } else if (xhr.status === 413) {
-                    mensajeError = 'Archivo demasiado grande. Máximo 5MB.';
-                } else if (xhr.status === 422) {
-                    mensajeError = 'Datos inválidos. Verifica el archivo.';
+                } catch (e) {
+                    // Fallback a mensajes genéricos
+                    if (xhr.status === 0) {
+                        mensajeError = 'Error de conexión. Verifica que el servidor esté corriendo.';
+                    } else if (xhr.status === 413) {
+                        mensajeError = 'Archivo demasiado grande. Máximo 5MB.';
+                    } else if (xhr.status === 422) {
+                        mensajeError = 'Datos inválidos. Verifica el archivo.';
+                    } else if (xhr.status === 401 || xhr.status === 403) {
+                        mensajeError = 'No tienes permisos para subir fotos.';
+                    }
                 }
                 
                 Swal.fire('Error', mensajeError, 'error');

@@ -16,11 +16,15 @@ export default defineConfig({
         }
     },
     server: {
-        host: '0.0.0.0',
+        host: '127.0.0.1',
         port: 5174,
         hmr: {
-            host: '127.0.0.1',
+            host: 'localhost',
             port: 5174,
+            protocol: 'ws',
+        },
+        watch: {
+            usePolling: true,
         }
     },
     plugins: [
