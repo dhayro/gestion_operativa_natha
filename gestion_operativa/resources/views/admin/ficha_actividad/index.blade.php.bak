@@ -1781,14 +1781,8 @@
             Swal.fire('Aviso', 'Primero guarda la ficha principal', 'warning');
             return;
         }
-        
-        // Abrir modal AHORA con mensaje de carga
+        cargarMaterialesDisponibles();
         $('#materialModal').modal('show');
-        
-        // DESPUÉS cargar los materiales de forma asincrónica
-        setTimeout(() => {
-            cargarMaterialesDisponibles();
-        }, 100);
     }
 
     function showFotoForm() {
@@ -2174,6 +2168,12 @@
     function cargarMaterialesDisponibles() {
         const select = $('#material_id_detalle');
         select.html('<option value="">Cargando materiales...</option>');
+        
+        if (!fichaActualId) {
+            select.html('<option value="">-- Primero guarda la ficha --</option>');
+            return;
+        }
+
         console.log('Cargando materiales disponibles para ficha:', fichaActualId);
 
         // INTENTO 1: Obtener cuadrilla SELECCIONADA en el modal
@@ -2183,34 +2183,45 @@
         if (!cuadrillaSeleccionada && window.cuadrillaFijaId) {
             cuadrillaSeleccionada = window.cuadrillaFijaId;
         }
+        console.log('� Cuadrilla seleccionada en modal:', cuadrillaSeleccionada);
         
-        // INTENTO 3: Si aun no hay cuadrilla, obtenerla de los empleados asignados
         if (!cuadrillaSeleccionada) {
-            console.log('Sin cuadrilla en modal. Buscando en empleados asignados...');
-            $.ajax({
-                url: `/fichas-actividad/${fichaActualId}/detalles/empleados`,
-                type: "GET",
-                success: function(response) {
-                    if (response.data && response.data.length > 0) {
-                        const primerEmpleado = response.data[0];
-                        if (primerEmpleado.cuadrilla_empleado && primerEmpleado.cuadrilla_empleado.cuadrilla) {
-                            const cuadrillaId = primerEmpleado.cuadrilla_empleado.cuadrilla.id;
-                            console.log('Cuadrilla encontrada en empleados:', cuadrillaId);
-                            cargarMaterialesDeCuadrilla(cuadrillaId);
-                            return;
-                        }
-                    }
-                    select.html('<option value="">-- No hay empleados o cuadrilla asignada --</option>');
-                },
-                error: function() {
-                    select.html('<option value="">-- Error al cargar empleados --</option>');
-                }
-            });
+            console.log('⚠️ Sin cuadrilla seleccionada');
+            select.html('<option value="">-- Selecciona una cuadrilla primero --</option>');
             return;
         }
         
-        // Si llegamos aquí, tenemos cuadrilla
-        cargarMaterialesDeCuadrilla(cuadrillaSeleccionada);
+        // PASO 1: Obtener PECOSA de la cuadrilla SELECCIONADA
+        $.get(`/pecosas/cuadrilla/${cuadrillaSeleccionada}/pecosas`, function(pecosasResponse) {
+            console.log('Respuesta de materiales disponibles:', pecosasResponse);
+            
+            // La respuesta contiene 'data' (materiales) y 'pecosas' (lista de pecosas)
+            if (!pecosasResponse.success || !pecosasResponse.pecosas || pecosasResponse.pecosas.length === 0) {
+                console.warn('⚠️ La cuadrilla seleccionada NO tiene PECOSA asignada');
+                select.html('<option value="">-- Esta cuadrilla no tiene PECOSA asignada --</option>');
+                
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 5000,
+                    timerProgressBar: true
+                });
+                Toast.fire({
+                    icon: 'warning',
+                    title: '⚠️ Esta cuadrilla no tiene PECOSA'
+                });
+                return;
+            }
+            
+            const pecosaId = pecosasResponse.pecosas[0].id;
+            console.log('📦 PECOSA seleccionada ID:', pecosaId);
+            console.log('📦 PECOSAs disponibles:', pecosasResponse.pecosas);
+            cargarMaterialesDePecosa(pecosaId);
+        }).fail(function(err) {
+            console.error('❌ Error obteniendo pecosas:', err);
+            select.html('<option value="">-- Error al cargar pecosas --</option>');
+        });
     }
     
     function cargarMaterialesDeCuadrilla(cuadrillaId) {
@@ -2259,12 +2270,12 @@
             url: `/pecosas/${pecosaId}/materiales`,
             type: 'GET',
             success: function(response) {
-                console.log('Respuesta completa:', response);
-                console.log('Materiales recibidos:', response.data);
-                console.log('Cantidad de materiales:', response.data?.length || 0);
+                console.log('📥 Respuesta completa:', response);
+                console.log('📥 Materiales recibidos:', response.data);
+                console.log('📥 Cantidad de materiales:', response.data?.length || 0);
                 
                 if (response.success && Array.isArray(response.data) && response.data.length > 0) {
-                    console.log('Mostrando materiales en SELECT');
+                    console.log('✅ Mostrando materiales en SELECT');
                     select.html('<option value="">-- Selecciona un material --</option>');
                     $.each(response.data, function(i, material) {
                         console.log(`  Material ${i+1}:`, material);
@@ -2273,7 +2284,7 @@
                     });
                 } else {
                     // PECOSA vacía - mostrar mensaje útil
-                    console.warn('PECOSA sin materiales');
+                    console.warn('⚠️ PECOSA sin materiales');
                     select.html('<option value="">-- PECOSA sin materiales asignados --</option>');
                     
                     const Toast = Swal.mixin({
@@ -2285,7 +2296,7 @@
                     });
                     Toast.fire({
                         icon: 'warning',
-                        title: 'Esta PECOSA no tiene materiales asignados'
+                        title: '⚠️ Esta PECOSA no tiene materiales asignados'
                     });
                     
                     console.warn('⚠️ PECOSA ' + response.pecosa_nro + ' sin materiales. Agrega materiales desde el módulo de PECOSAS.');

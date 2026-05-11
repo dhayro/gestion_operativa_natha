@@ -331,6 +331,9 @@
                 </a>
                 <ul class="collapse submenu list-unstyled {{ ($catName === 'admin') ? 'show' : '' }}" id="admin" data-bs-parent="#accordionExample">
                     @if(auth()->user()->hasPermission('administrar_roles'))
+                    <li class="{{ Request::routeIs('usuarios.index') ? 'active' : '' }}">
+                        <a href="{{ route('usuarios.index') }}">Gestión de Usuarios</a>
+                    </li>
                     <li class="{{ Request::routeIs('roles.index') ? 'active' : '' }}">
                         <a href="{{ route('roles.index') }}">Gestión de Roles</a>
                     </li>

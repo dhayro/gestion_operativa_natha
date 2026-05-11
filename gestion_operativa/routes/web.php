@@ -20,6 +20,7 @@ use App\Http\Controllers\TiposActividadController;
 use App\Http\Controllers\VehiculoController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\SoatController; 
 use App\Http\Controllers\AsignacionVehiculoController; 
 use App\Http\Controllers\PapeletaController;
@@ -84,19 +85,21 @@ Route::get('/api/user/me', function () {
     try {
         $user = Auth::user();
         
-        // Si el usuario es admin o supervisor, devolver todas las cuadrillas
+        // Si el usuario es admin o supervisor
         if ($user->hasAnyRole(['admin', 'supervisor'])) {
             return response()->json([
                 'id' => $user->id,
                 'email' => $user->email,
                 'roles' => $user->roles->pluck('nombre')->toArray(),
                 'empleado_id' => null,
+                'empleado' => null,
                 'cuadrilla_id' => null,
+                'cuadrilla' => null,
                 'is_admin_or_supervisor' => true
             ]);
         }
         
-        // Para operarios y técnicos, obtener su cuadrilla
+        // Para operarios y técnicos, obtener su empleado y cuadrillas
         if (!$user || !$user->empleado) {
             return response()->json(['error' => 'Usuario no tiene empleado asignado'], 404);
         }
@@ -109,20 +112,22 @@ Route::get('/api/user/me', function () {
                                 ->orderBy('created_at', 'desc')
                                 ->first();
         
-        if (!$cuadrillaEmpleado) {
-            return response()->json(['error' => 'Empleado no tiene cuadrilla asignada'], 404);
-        }
-        
-        $cuadrilla = $cuadrillaEmpleado->cuadrilla;
+        $cuadrilla = $cuadrillaEmpleado ? $cuadrillaEmpleado->cuadrilla : null;
         
         return response()->json([
             'id' => $user->id,
             'email' => $user->email,
             'roles' => $user->roles->pluck('nombre')->toArray(),
             'empleado_id' => $user->empleado_id,
-            'empleado' => $empleado,
-            'cuadrilla_id' => $cuadrilla->id,
-            'cuadrilla' => $cuadrilla,
+            'empleado' => [
+                'id' => $empleado->id,
+                'nombre' => $empleado->nombre
+            ],
+            'cuadrilla_id' => $cuadrilla ? $cuadrilla->id : null,
+            'cuadrilla' => $cuadrilla ? [
+                'id' => $cuadrilla->id,
+                'nombre' => $cuadrilla->nombre
+            ] : null,
             'is_admin_or_supervisor' => false
         ]);
     } catch (\Exception $e) {
@@ -148,6 +153,24 @@ Route::get('/api/cuadrillas/{id}', function ($id) {
         'nombre' => $cuadrilla->nombre,
         'estado' => $cuadrilla->estado
     ]);
+});
+
+// Obtener cuadrillas activas de un empleado
+Route::get('/api/empleados/{empleadoId}/cuadrillas-activas', function ($empleadoId) {
+    $empleado = \App\Models\Empleado::find($empleadoId);
+    
+    if (!$empleado) {
+        return response()->json(['error' => 'Empleado no encontrado'], 404);
+    }
+    
+    $cuadrillas = $empleado->cuadrillasActivas()->get();
+    
+    return response()->json($cuadrillas->map(function($cuadrilla) {
+        return [
+            'id' => $cuadrilla->id,
+            'nombre' => $cuadrilla->nombre
+        ];
+    }));
 });
 
 // Materiales CRUD (rutas agrupadas igual que empleados)
@@ -658,5 +681,13 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
         Route::get('/{permission}', [PermissionController::class, 'show'])->name('permissions.show');
         Route::put('/{permission}', [PermissionController::class, 'update'])->name('permissions.update');
         Route::delete('/{permission}', [PermissionController::class, 'destroy'])->name('permissions.destroy');
+    });
+
+    // Gestión de Usuarios
+    Route::prefix('usuarios')->group(function () {
+        Route::get('/data', [UserController::class, 'getData'])->name('usuarios.data');
+        Route::get('/', [UserController::class, 'index'])->name('usuarios.index');
+        Route::get('/{user}/roles', [UserController::class, 'getRolesModal'])->name('usuarios.getRoles');
+        Route::post('/{user}/roles', [UserController::class, 'asignarRoles'])->name('usuarios.asignarRoles');
     });
 });

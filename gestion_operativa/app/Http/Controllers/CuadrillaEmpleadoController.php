@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Cuadrilla;
 use App\Models\Empleado;
 use App\Models\CuadrillaEmpleado;
+use App\Models\FichaActividadEmpleado;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
 
 class CuadrillaEmpleadoController extends Controller
@@ -182,73 +184,75 @@ class CuadrillaEmpleadoController extends Controller
     }
 
     /**
-     * Get empleados disponibles para asignar (no están en la cuadrilla actualmente)
+     * Get empleados disponibles para asignar a una cuadrilla (NO están asignados actualmente)
      */
     public function getEmpleadosDisponibles(Request $request, $cuadrillaId)
     {
-        $search = $request->get('search', '');
-        $page = $request->get('page', 1);
-        $fichaId = $request->get('ficha_id', null);
-        $perPage = 10;
+        try {
+            $search = $request->get('search', '');
+            $page = $request->get('page', 1);
+            $perPage = 10;
+            $fichaId = $request->get('ficha_id', null);
 
-        // Obtener IDs de empleados YA EN ESTA FICHA para excluirlos
-        $empleadosEnFicha = [];
-        if ($fichaId) {
-            // Obtener los CuadrillaEmpleado IDs agregados a la ficha
-            $fichaEmpleados = \App\Models\FichaActividadEmpleado::where('ficha_actividad_id', $fichaId)
-                ->get()
-                ->pluck('cuadrilla_empleado_id')
-                ->toArray();
-            
-            // Ahora obtener los empleado_id de esos cuadrilla_empleado_id
-            if (!empty($fichaEmpleados)) {
-                $empleadosEnFicha = CuadrillaEmpleado::whereIn('id', $fichaEmpleados)
-                    ->pluck('empleado_id')
+            // Obtener IDs de empleados YA ASIGNADOS a esta FICHA (si existe)
+            // La tabla ficha_actividad_empleados usa cuadrilla_empleado_id, así que necesitamos joinear con cuadrillas_empleados
+            $empleadosEnFicha = [];
+            if ($fichaId) {
+                $empleadosEnFicha = DB::table('ficha_actividad_empleados')
+                    ->join('cuadrillas_empleados', 'ficha_actividad_empleados.cuadrilla_empleado_id', '=', 'cuadrillas_empleados.id')
+                    ->where('ficha_actividad_empleados.ficha_actividad_id', $fichaId)
+                    ->pluck('cuadrillas_empleados.empleado_id')
                     ->toArray();
             }
-        }
 
-        // Obtener IDs de empleados ASIGNADOS a esta cuadrilla (activos)
-        $empleadosEnCuadrilla = CuadrillaEmpleado::where('cuadrilla_id', $cuadrillaId)
-            ->where('estado', 1)
-            ->pluck('empleado_id')
-            ->toArray();
+            // Obtener empleados que ESTÁN asignados a esta cuadrilla y activos
+            $query = Empleado::with(['cargo', 'area'])
+                ->where('empleados.estado', true) // Solo empleados activos
+                ->whereHas('cuadrillas', function($q) use ($cuadrillaId) {
+                    $q->where('cuadrilla_id', $cuadrillaId)
+                      ->where('cuadrillas_empleados.estado', true); // Asignación activa en la cuadrilla
+                })
+                ->whereNotIn('empleados.id', $empleadosEnFicha) // Excepto los ya asignados a esta ficha
+                ->orderBy('nombre');
 
-        // Obtener empleados que ESTÁN asignados a esta cuadrilla, pero NO en esta ficha
-        $query = Empleado::with(['cargo', 'area'])
-            ->where('empleados.estado', true) // Solo empleados activos
-            ->whereIn('empleados.id', $empleadosEnCuadrilla) // SOLO de esta cuadrilla
-            ->whereNotIn('empleados.id', $empleadosEnFicha) // Excepto los ya en la ficha
-            ->orderBy('nombre');
+            if (!empty($search)) {
+                $query->where(function($q) use ($search) {
+                    $q->where('nombre', 'LIKE', "%{$search}%")
+                      ->orWhere('apellido', 'LIKE', "%{$search}%")
+                      ->orWhere('dni', 'LIKE', "%{$search}%");
+                });
+            }
 
-        if (!empty($search)) {
-            $query->where(function($q) use ($search) {
-                $q->where('nombre', 'LIKE', "%{$search}%")
-                  ->orWhere('apellido', 'LIKE', "%{$search}%")
-                  ->orWhere('dni', 'LIKE', "%{$search}%");
+            $total = $query->count();
+            $empleados = $query->offset(($page - 1) * $perPage)
+                ->limit($perPage)
+                ->get();
+
+            $results = $empleados->map(function ($empleado) {
+                return [
+                    'id' => $empleado->id,
+                    'text' => $empleado->nombre . ' ' . $empleado->apellido . ' (' . $empleado->dni . ')',
+                    'cargo' => $empleado->cargo ? $empleado->cargo->nombre : '',
+                    'area' => $empleado->area ? $empleado->area->nombre : ''
+                ];
             });
+
+            return response()->json([
+                'results' => $results,
+                'pagination' => [
+                    'more' => ($page * $perPage) < $total
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error en getEmpleadosDisponibles: ' . $e->getMessage(), [
+                'cuadrillaId' => $cuadrillaId,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'results' => [],
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $total = $query->count();
-        $empleados = $query->offset(($page - 1) * $perPage)
-            ->limit($perPage)
-            ->get();
-
-        $results = $empleados->map(function ($empleado) {
-            return [
-                'id' => $empleado->id,
-                'text' => $empleado->nombre . ' ' . $empleado->apellido . ' (' . $empleado->dni . ')',
-                'cargo' => $empleado->cargo ? $empleado->cargo->nombre : '',
-                'area' => $empleado->area ? $empleado->area->nombre : ''
-            ];
-        });
-
-        return response()->json([
-            'results' => $results,
-            'pagination' => [
-                'more' => ($page * $perPage) < $total
-            ]
-        ]);
     }
 
     public function select()

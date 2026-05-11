@@ -356,13 +356,13 @@
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="cuadrilla_id" class="form-label">Cuadrilla <span class="text-danger">*</span></label>
-                                    <select class="form-control select2" id="cuadrilla_id" name="cuadrilla_id" required>
+                                    <select class="form-control" id="cuadrilla_id" name="cuadrilla_id" required style="width: 100%;">
                                         <option value="">Seleccione una cuadrilla</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="empleado_id" class="form-label">Empleado <span class="text-danger">*</span></label>
-                                    <select class="form-control select2" id="empleado_id" name="empleado_id" required>
+                                    <select class="form-control" id="empleado_id" name="empleado_id" required style="width: 100%;">
                                         <option value="">Seleccione un empleado</option>
                                     </select>
                                 </div>
@@ -550,15 +550,10 @@
                 ]
             });
 
-            // Cargar cuadrillas al iniciar
-            cargarCuadrillas();
+            // Select2 inicialización - Se reinicializa al abrir el modal
+            // (ver editarPecosa() y resetFormPecosa())
 
-            // Select2 inicialización
-            $('#cuadrilla_id').select2();
-            $('#empleado_id').select2();
-            $('#formNeaDetalle').select2({
-                dropdownParent: $('#pecosaModal')
-            });
+            // Tabla DataTable de PECOSAS
 
             // ===== FIX PARA SCROLL EN MODAL CON SELECT2 =====
             // Permitir scroll en modal incluso cuando Select2 dropdown está abierto
@@ -639,28 +634,6 @@
                 }, 500);
             @endif
         });
-
-        function cargarCuadrillas() {
-            $.get('/cuadrillas/api/select', function(data) {
-                console.log('Respuesta cuadrillas:', data);
-                const select = $('#cuadrilla_id');
-                select.find('option:not(:first)').remove();
-                
-                // La API devuelve { results: [...], pagination: {...} }
-                const items = data.results || (Array.isArray(data) ? data : (data.data || []));
-                
-                if (Array.isArray(items) && items.length > 0) {
-                    items.forEach(function(item) {
-                        select.append(`<option value="${item.id}">${item.text}</option>`);
-                    });
-                    console.log('Cuadrillas cargadas:', items.length);
-                } else {
-                    console.warn('No hay cuadrillas o formato incorrecto:', items);
-                }
-            }).fail(function(error) {
-                console.error('Error al cargar cuadrillas:', error);
-            });
-        }
 
         function cargarEmpleados(cuadrillaId) {
             if (!cuadrillaId) {
@@ -1035,7 +1008,54 @@
             $('#resumenTotalesPecosa').hide();
             setFechaHoy();
             
-            // Resetear select2
+            // Reinicializar Select2 para Cuadrilla
+            if ($('#cuadrilla_id').hasClass('select2-hidden-accessible')) {
+                $('#cuadrilla_id').select2('destroy');
+            }
+            $('#cuadrilla_id').select2({
+                dropdownParent: $('#pecosaModal'),
+                placeholder: 'Buscar cuadrilla...',
+                allowClear: true,
+                ajax: {
+                    url: '/cuadrillas/api/select',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            search: params.term,
+                            page: params.page || 1
+                        };
+                    },
+                    processResults: function (data, params) {
+                        params.page = params.page || 1;
+                        return {
+                            results: data.results,
+                            pagination: {
+                                more: data.pagination.more
+                            }
+                        };
+                    },
+                    cache: true
+                }
+            });
+            
+            // Reinicializar Select2 para Empleado
+            if ($('#empleado_id').hasClass('select2-hidden-accessible')) {
+                $('#empleado_id').select2('destroy');
+            }
+            $('#empleado_id').select2({
+                dropdownParent: $('#pecosaModal')
+            });
+            
+            // Reinicializar Select2 para Material NEA
+            if ($('#formNeaDetalle').hasClass('select2-hidden-accessible')) {
+                $('#formNeaDetalle').select2('destroy');
+            }
+            $('#formNeaDetalle').select2({
+                dropdownParent: $('#pecosaModal')
+            });
+            
+            // Resetear valores
             $('#cuadrilla_id').val(null).trigger('change');
             $('#empleado_id').val(null).trigger('change');
             $('#formNeaDetalle').val('').trigger('change');
@@ -1360,7 +1380,7 @@
                         
                         calcularTotalesPecosa();
                         
-                        // Reinicializar Select2 en el modal
+                        // Reinicializar Select2 en el modal con AJAX
                         if ($('#cuadrilla_id').hasClass('select2-hidden-accessible')) {
                             $('#cuadrilla_id').select2('destroy');
                         }
@@ -1368,9 +1388,38 @@
                             $('#empleado_id').select2('destroy');
                         }
                         
+                        // Select2 para Cuadrilla con búsqueda AJAX
                         $('#cuadrilla_id').select2({
-                            dropdownParent: $('#pecosaModal')
+                            dropdownParent: $('#pecosaModal'),
+                            placeholder: 'Buscar cuadrilla...',
+                            allowClear: true,
+                            ajax: {
+                                url: '/cuadrillas/api/select',
+                                dataType: 'json',
+                                delay: 250,
+                                data: function (params) {
+                                    return {
+                                        search: params.term,
+                                        page: params.page || 1
+                                    };
+                                },
+                                processResults: function (data, params) {
+                                    params.page = params.page || 1;
+                                    return {
+                                        results: data.results,
+                                        pagination: {
+                                            more: data.pagination.more
+                                        }
+                                    };
+                                },
+                                cache: true
+                            },
+                            templateSelection: function(cuadrilla) {
+                                return cuadrilla.text;
+                            }
                         });
+                        
+                        // Select2 para Empleado simple
                         $('#empleado_id').select2({
                             dropdownParent: $('#pecosaModal')
                         });
