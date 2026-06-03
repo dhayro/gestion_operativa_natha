@@ -16,15 +16,21 @@ export default defineConfig({
         }
     },
     server: {
-        host: '127.0.0.1',
+        host: '0.0.0.0',
         port: 5174,
         hmr: {
-            host: 'localhost',
-            port: 5174,
-            protocol: 'ws',
+            host: 'vite.mmmcontratistasgenerales.com',
+            clientPort: 443,
+            protocol: 'wss'
         },
         watch: {
             usePolling: true,
+        },
+        middlewareMode: false,
+        cors: {
+            origin: ['https://mmmcontratistasgenerales.com', 'http://localhost'],
+            methods: ['GET', 'HEAD', 'OPTIONS'],
+            credentials: true
         }
     },
     plugins: [

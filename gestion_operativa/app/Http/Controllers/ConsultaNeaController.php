@@ -8,6 +8,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class ConsultaNeaController extends Controller
 {
@@ -281,7 +287,7 @@ class ConsultaNeaController extends Controller
             ->join('pecosa_detalles as pd', 'pd.pecosa_id', '=', 'p.id')
             ->join('nea_detalles as nd', 'nd.id', '=', 'pd.nea_detalle_id')
             ->join('users as u', 'mpm.usuario_creacion_id', '=', 'u.id', 'left')
-            ->select('mpm.*', 'm.nombre as material_nombre', 'm.codigo_material', 'u.name as usuario_name')
+            ->select('mpm.*', 'm.nombre as material_nombre', 'm.codigo_material', 'u.name as usuario_name', 'nd.precio_unitario', 'nd.incluye_igv', 'mpm.created_at as fecha_mov')
             ->where('mpm.tipo_movimiento', 'salida')
             ->where('mpm.estado', true)
             ->whereIn('nd.id', $detallesIds)
@@ -295,19 +301,192 @@ class ConsultaNeaController extends Controller
             }))
             ->merge($movimientosSalidaPecosa->map(function ($m) {
                 $m->origen = 'material_pecosa_movimientos';
+                // Crear objeto material compatible con la vista
+                $m->material = (object) [
+                    'nombre' => $m->material_nombre,
+                    'codigo_material' => $m->codigo_material
+                ];
+                // Crear objeto usuarioCreacion compatible con la vista
+                $m->usuarioCreacion = (object) [
+                    'name' => $m->usuario_name
+                ];
+                // Convertir fecha a Carbon
+                $m->fecha = Carbon::parse($m->fecha_mov);
+                $m->created_at = $m->fecha_mov;
                 return $m;
             }))
             ->sortByDesc('created_at');
 
-        $html = view('admin.consultas.neas.reporte', [
+        $pdf = Pdf::loadView('admin.consultas.neas.reporte', [
             'nea' => $nea,
             'movimientosEntrada' => $movimientosEntrada,
             'movimientosSalida' => $movimientosSalida
-        ])->render();
+        ])->setPaper('a4', 'landscape')->setOption('margin-top', 10)->setOption('margin-bottom', 10)->setOption('margin-left', 10)->setOption('margin-right', 10);
 
-        return response()->json([
-            'html' => $html,
-            'filename' => 'NEA_' . $nea->nro_documento . '_' . now()->format('Y-m-d-His') . '.pdf'
-        ]);
+        $filename = 'NEA_' . $nea->nro_documento . '_' . now()->format('Y-m-d-His') . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
+    /**
+     * Exportar reporte a Excel
+     */
+    public function exportarExcel($neaId)
+    {
+        $nea = Nea::with([
+            'proveedor',
+            'tipoComprobante',
+            'detalles.material',
+            'usuarioCreacion'
+        ])->findOrFail($neaId);
+
+        $detallesIds = $nea->detalles()->pluck('id')->toArray();
+
+        $movimientosEntrada = Movimiento::where('tipo_movimiento', 'entrada')
+            ->whereIn('nea_detalle_id', $detallesIds)
+            ->with('material', 'usuarioCreacion')
+            ->get();
+
+        $movimientosSalidaDirecta = Movimiento::where('tipo_movimiento', 'salida')
+            ->whereIn('nea_detalle_id', $detallesIds)
+            ->with('material', 'usuarioCreacion')
+            ->get();
+
+        $movimientosSalidaPecosa = DB::table('material_pecosa_movimientos as mpm')
+            ->join('materials as m', 'mpm.material_id', '=', 'm.id')
+            ->join('pecosas as p', 'mpm.pecosa_id', '=', 'p.id')
+            ->join('pecosa_detalles as pd', 'pd.pecosa_id', '=', 'p.id')
+            ->join('nea_detalles as nd', 'nd.id', '=', 'pd.nea_detalle_id')
+            ->join('users as u', 'mpm.usuario_creacion_id', '=', 'u.id', 'left')
+            ->select('mpm.*', 'm.nombre as material_nombre', 'm.codigo_material', 'u.name as usuario_name', 'nd.precio_unitario', 'nd.incluye_igv', 'mpm.created_at as fecha_mov')
+            ->where('mpm.tipo_movimiento', 'salida')
+            ->where('mpm.estado', true)
+            ->whereIn('nd.id', $detallesIds)
+            ->get();
+
+        $movimientosSalida = collect()
+            ->merge($movimientosSalidaDirecta->map(function ($m) {
+                $m->origen = 'movimientos';
+                return $m;
+            }))
+            ->merge($movimientosSalidaPecosa->map(function ($m) {
+                $m->origen = 'material_pecosa_movimientos';
+                $m->material = (object) [
+                    'nombre' => $m->material_nombre,
+                    'codigo_material' => $m->codigo_material
+                ];
+                $m->usuarioCreacion = (object) [
+                    'name' => $m->usuario_name
+                ];
+                $m->fecha = Carbon::parse($m->fecha_mov);
+                $m->created_at = $m->fecha_mov;
+                return $m;
+            }))
+            ->sortByDesc('created_at');
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Título
+        $sheet->mergeCells('A1:I1');
+        $sheet->setCellValue('A1', 'REPORTE DE ENTRADA DE ALMACÉN (NEA) - ' . $nea->nro_documento);
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // Información general
+        $row = 3;
+        $sheet->setCellValue('A' . $row, 'NEA Nº:');
+        $sheet->setCellValue('B' . $row, $nea->nro_documento);
+        $sheet->setCellValue('D' . $row, 'Proveedor:');
+        $sheet->setCellValue('E' . $row, $nea->proveedor->razon_social ?? 'N/A');
+
+        $row++;
+        $sheet->setCellValue('A' . $row, 'Fecha:');
+        $sheet->setCellValue('B' . $row, $nea->fecha->format('d/m/Y'));
+        $sheet->setCellValue('D' . $row, 'Usuario:');
+        $sheet->setCellValue('E' . $row, $nea->usuarioCreacion->name ?? 'Sistema');
+
+        // Movimientos de Entrada
+        $row = 6;
+        $sheet->setCellValue('A' . $row, 'MOVIMIENTOS DE ENTRADA');
+        $sheet->getStyle('A' . $row)->getFont()->setBold(true)->setSize(11);
+
+        $row++;
+        $headers = ['Material', 'Código', 'Cantidad', 'Precio Unit.', 'Subtotal', 'IGV', 'Total', 'Fecha', 'Usuario'];
+        $col = 'A';
+        foreach ($headers as $header) {
+            $sheet->setCellValue($col . $row, $header);
+            $sheet->getStyle($col . $row)->getFont()->setBold(true);
+            $sheet->getStyle($col . $row)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFD3D3D3');
+            $col++;
+        }
+
+        $row++;
+        $startRow = $row;
+        foreach ($movimientosEntrada as $mov) {
+            $subtotal = $mov->cantidad * $mov->precio_unitario;
+            $igv = $mov->incluye_igv ? $subtotal * 0.18 : 0;
+
+            $sheet->setCellValue('A' . $row, $mov->material->nombre ?? 'N/A');
+            $sheet->setCellValue('B' . $row, $mov->material->codigo_material ?? 'N/A');
+            $sheet->setCellValue('C' . $row, $mov->cantidad);
+            $sheet->setCellValue('D' . $row, $mov->precio_unitario);
+            $sheet->setCellValue('E' . $row, $subtotal);
+            $sheet->setCellValue('F' . $row, $igv);
+            $sheet->setCellValue('G' . $row, $subtotal + $igv);
+            $sheet->setCellValue('H' . $row, $mov->fecha->format('d/m/Y'));
+            $sheet->setCellValue('I' . $row, $mov->usuarioCreacion->name ?? 'Sistema');
+            $row++;
+        }
+
+        // Movimientos de Salida
+        $row += 2;
+        $sheet->setCellValue('A' . $row, 'MOVIMIENTOS DE SALIDA');
+        $sheet->getStyle('A' . $row)->getFont()->setBold(true)->setSize(11);
+
+        $row++;
+        $col = 'A';
+        foreach ($headers as $header) {
+            $sheet->setCellValue($col . $row, $header);
+            $sheet->getStyle($col . $row)->getFont()->setBold(true);
+            $sheet->getStyle($col . $row)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFD3D3D3');
+            $col++;
+        }
+
+        $row++;
+        foreach ($movimientosSalida as $mov) {
+            $subtotal = $mov->cantidad * $mov->precio_unitario;
+            $igv = $mov->incluye_igv ? $subtotal * 0.18 : 0;
+
+            $sheet->setCellValue('A' . $row, $mov->material->nombre ?? 'N/A');
+            $sheet->setCellValue('B' . $row, $mov->material->codigo_material ?? 'N/A');
+            $sheet->setCellValue('C' . $row, $mov->cantidad);
+            $sheet->setCellValue('D' . $row, $mov->precio_unitario);
+            $sheet->setCellValue('E' . $row, $subtotal);
+            $sheet->setCellValue('F' . $row, $igv);
+            $sheet->setCellValue('G' . $row, $subtotal + $igv);
+            $sheet->setCellValue('H' . $row, $mov->fecha->format('d/m/Y'));
+            $sheet->setCellValue('I' . $row, $mov->usuarioCreacion->name ?? 'Sistema');
+            $row++;
+        }
+
+        // Ajustar ancho de columnas
+        foreach (range('A', 'I') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $filename = 'NEA_' . $nea->nro_documento . '_' . now()->format('Y-m-d-His') . '.xlsx';
+        $writer = new Xlsx($spreadsheet);
+
+        return response()->stream(
+            function () use ($writer) {
+                $writer->save('php://output');
+            },
+            200,
+            [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            ]
+        );
     }
 }

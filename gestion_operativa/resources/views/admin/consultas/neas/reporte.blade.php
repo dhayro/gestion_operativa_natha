@@ -12,40 +12,44 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            font-size: 11px;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 8px;
             color: #333;
-            line-height: 1.4;
+            line-height: 1.2;
         }
 
         .container {
             width: 100%;
-            padding: 20px;
+            max-width: 100%;
+            padding: 10px 5px;
+            box-sizing: border-box;
+            overflow: visible;
+            margin: 0;
         }
 
         .header {
             text-align: center;
-            margin-bottom: 20px;
-            border-bottom: 3px solid #007bff;
-            padding-bottom: 15px;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 8px;
         }
 
         .header h1 {
             color: #007bff;
-            font-size: 18px;
-            margin-bottom: 5px;
+            font-size: 14px;
+            margin-bottom: 2px;
         }
 
         .header p {
-            font-size: 10px;
+            font-size: 7px;
             color: #666;
         }
 
         .info-section {
             background-color: #f8f9fa;
-            padding: 12px;
-            margin-bottom: 15px;
-            border-left: 4px solid #007bff;
+            padding: 8px;
+            margin-bottom: 10px;
+            border-left: 3px solid #007bff;
         }
 
         .info-row {
@@ -56,7 +60,7 @@
         }
 
         .info-item {
-            font-size: 10px;
+            font-size: 7px;
         }
 
         .info-label {
@@ -71,17 +75,18 @@
         .section-title {
             background-color: #007bff;
             color: white;
-            padding: 8px 12px;
-            margin-top: 15px;
-            margin-bottom: 10px;
+            padding: 5px 8px;
+            margin-top: 8px;
+            margin-bottom: 6px;
             font-weight: bold;
-            font-size: 12px;
+            font-size: 11px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
+            table-layout: fixed;
         }
 
         thead {
@@ -89,17 +94,21 @@
         }
 
         th {
-            padding: 8px;
+            padding: 3px;
             text-align: left;
             font-weight: bold;
-            border-bottom: 2px solid #007bff;
-            font-size: 9px;
+            border-bottom: 1px solid #007bff;
+            font-size: 7px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
         td {
-            padding: 8px;
+            padding: 3px;
             border-bottom: 1px solid #ddd;
-            font-size: 9px;
+            font-size: 7px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
         tr:nth-child(even) {
@@ -146,42 +155,44 @@
         }
 
         .totales {
-            margin-top: 15px;
-            padding: 12px;
+            margin-top: 8px;
+            padding: 8px;
             background-color: #f8f9fa;
-            border-left: 4px solid #28a745;
+            border-left: 3px solid #28a745;
         }
 
         .total-row {
             display: grid;
             grid-template-columns: auto auto;
-            gap: 50px;
-            margin-bottom: 8px;
+            gap: 30px;
+            margin-bottom: 4px;
             justify-content: flex-end;
         }
 
         .total-label {
             font-weight: bold;
+            font-size: 8px;
         }
 
         .total-value {
             text-align: right;
             font-weight: bold;
+            font-size: 8px;
         }
 
         .footer {
-            margin-top: 30px;
-            padding-top: 15px;
+            margin-top: 10px;
+            padding-top: 8px;
             border-top: 1px solid #ddd;
             text-align: center;
-            font-size: 9px;
+            font-size: 8px;
             color: #999;
         }
 
         .resumen-stock {
             background-color: #f0f8ff;
-            padding: 10px;
-            margin: 15px 0;
+            padding: 8px;
+            margin: 8px 0;
             border-radius: 4px;
         }
 
@@ -202,12 +213,12 @@
         }
 
         .stock-label {
-            font-size: 9px;
+            font-size: 7px;
             color: #666;
         }
 
         .stock-value {
-            font-size: 10px;
+            font-size: 7px;
             font-weight: bold;
         }
 
@@ -226,7 +237,7 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>📋 REPORTE DE ENTRADA DE ALMACÉN (NEA)</h1>
+            <h1>REPORTE DE ENTRADA DE ALMACÉN (NEA)</h1>
             <p>Consulta de Movimientos de Materiales</p>
         </div>
 
@@ -264,7 +275,7 @@
 
         <!-- Movimientos de Entrada -->
         @if($movimientosEntrada->count() > 0)
-            <div class="section-title">✅ MOVIMIENTOS DE ENTRADA</div>
+            <div class="section-title">MOVIMIENTOS DE ENTRADA</div>
             <table>
                 <thead>
                     <tr>
@@ -315,7 +326,7 @@
 
         <!-- Movimientos de Salida -->
         @if($movimientosSalida->count() > 0)
-            <div class="section-title">❌ MOVIMIENTOS DE SALIDA</div>
+            <div class="section-title">MOVIMIENTOS DE SALIDA</div>
             <table>
                 <thead>
                     <tr>
@@ -366,7 +377,7 @@
 
         <!-- Resumen de Stock -->
         <div class="resumen-stock">
-            <div class="resumen-titulo">📦 RESUMEN DE STOCK</div>
+            <div class="resumen-titulo">RESUMEN DE STOCK</div>
             @php
                 $totalStock = 0;
                 $totalValor = 0;

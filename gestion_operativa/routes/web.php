@@ -396,6 +396,7 @@ Route::prefix('consulta-nea')->name('consulta_nea.')->group(function () {
     Route::get('/{neaId}/movimientos', [ConsultaNeaController::class, 'getMovimientos'])->name('movimientos');
     Route::get('/{neaId}/resumen-stock', [ConsultaNeaController::class, 'getResumenStock'])->name('resumen_stock');
     Route::get('/{neaId}/exportar', [ConsultaNeaController::class, 'exportarReporte'])->name('exportar');
+    Route::get('/{neaId}/exportar-excel', [ConsultaNeaController::class, 'exportarExcel'])->name('exportar_excel');
 });
 
 // Rutas para Consulta de Stock General

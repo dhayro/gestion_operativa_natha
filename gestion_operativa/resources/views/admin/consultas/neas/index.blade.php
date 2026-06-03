@@ -189,6 +189,9 @@
                                             <button id="btnExportar" class="btn btn-success">
                                                 <i class="fas fa-file-pdf"></i> Exportar a PDF
                                             </button>
+                                            <button id="btnExportarExcel" class="btn btn-info">
+                                                <i class="fas fa-file-excel"></i> Exportar a Excel
+                                            </button>
                                             <button id="btnImprimir" class="btn btn-secondary">
                                                 <i class="fas fa-print"></i> Imprimir
                                             </button>
@@ -389,7 +392,7 @@ $(document).ready(function() {
         });
     }
 
-    // Botón Exportar
+    // Botón Exportar PDF
     $('#btnExportar').on('click', function() {
         let neaId = $('#neaSelect').val();
         if (!neaId) {
@@ -397,20 +400,20 @@ $(document).ready(function() {
             return;
         }
 
-        Swal.fire('Procesando', 'Generando PDF...', 'info');
-        Swal.showLoading();
+        const url = '{{ route("consulta_nea.exportar", ":id") }}'.replace(':id', neaId);
+        window.location.href = url;
+    });
 
-        $.ajax({
-            url: '{{ route("consulta_nea.exportar", ":id") }}'.replace(':id', neaId),
-            method: 'GET',
-            success: function(response) {
-                // Aquí iría la generación del PDF
-                Swal.fire('Éxito', 'Archivo descargado', 'success');
-            },
-            error: function(xhr) {
-                Swal.fire('Error', 'No se pudo exportar', 'error');
-            }
-        });
+    // Botón Exportar Excel
+    $('#btnExportarExcel').on('click', function() {
+        let neaId = $('#neaSelect').val();
+        if (!neaId) {
+            Swal.fire('Aviso', 'Debe seleccionar una NEA', 'warning');
+            return;
+        }
+
+        const url = '{{ route("consulta_nea.exportar_excel", ":id") }}'.replace(':id', neaId);
+        window.location.href = url;
     });
 
     // Botón Imprimir
