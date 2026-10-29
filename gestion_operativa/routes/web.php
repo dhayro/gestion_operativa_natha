@@ -37,6 +37,7 @@ use App\Http\Controllers\NeaController;
 use App\Http\Controllers\PecosaController;
 use App\Http\Controllers\Admin\PecosaController as AdminPecosaController;
 use App\Http\Controllers\FichaActividadController;
+use App\Http\Controllers\ReporteActividadController;
 use App\Http\Controllers\FichaActividadDetalleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ConsultaNeaController;
@@ -498,6 +499,12 @@ Route::prefix('suministro')->group(function () {
     Route::get('/{suministro}', [SuministroController::class, 'show'])->name('suministro.show');
     Route::put('/{suministro}', [SuministroController::class, 'update'])->name('suministro.update');
     Route::delete('/{suministro}', [SuministroController::class, 'destroy'])->name('suministro.destroy');
+});
+
+// Reporte de actividades realizadas (por rango de fechas, cuadrilla o empleado)
+Route::prefix('reporte-actividades')->name('reporte_actividades.')->group(function () {
+    Route::get('/', [ReporteActividadController::class, 'index'])->name('index');
+    Route::get('/exportar', [ReporteActividadController::class, 'exportar'])->name('exportar');
 });
 
 // Rutas para Fichas de Actividad

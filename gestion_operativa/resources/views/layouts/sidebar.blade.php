@@ -313,6 +313,11 @@
                         <a href="{{ route('consulta_nea.index') }}"><i class="fas fa-search"></i> NEAs y Movimientos</a>
                     </li>
                     @endif
+                    @if(auth()->user()->hasPermission('ver_consultas'))
+                    <li class="{{ Request::routeIs('reporte_actividades.*') ? 'active' : '' }}">
+                        <a href="{{ route('reporte_actividades.index') }}"><i class="fas fa-clipboard-list"></i> Reporte de Actividades</a>
+                    </li>
+                    @endif
                 </ul>
             </li>
             @endif
