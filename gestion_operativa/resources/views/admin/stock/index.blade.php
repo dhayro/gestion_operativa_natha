@@ -447,11 +447,7 @@
         };
 
         function exportarStock() {
-            $.get('/stock/exportar', function(response) {
-                Swal.fire('Éxito', 'Reporte exportado correctamente', 'success');
-            }).fail(function() {
-                Swal.fire('Error', 'No se pudo exportar el reporte', 'error');
-            });
+            window.location.href = '{{ route('stock.exportar') }}';
         }
     </script>
 @endsection

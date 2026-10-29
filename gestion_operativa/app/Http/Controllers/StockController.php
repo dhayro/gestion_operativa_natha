@@ -9,6 +9,9 @@ use App\Models\PecosaDetalle;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class StockController extends Controller
 {
@@ -176,7 +179,6 @@ class StockController extends Controller
      */
     public function exportarStock()
     {
-        // Aquí se puede implementar export a Excel con Laravel Excel si lo necesitas
         $stock = Material::query()
             ->select([
                 'materials.id',
@@ -194,10 +196,50 @@ class StockController extends Controller
             ->where('materials.estado', true)
             ->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $stock,
-            'message' => 'Reporte generado exitosamente'
-        ]);
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Stock');
+
+        $sheet->fromArray(
+            ['Código', 'Material', 'Categoría', 'Unidad', 'Total entrada', 'Total salida', 'Stock actual', 'Precio unitario', 'Valor stock'],
+            null,
+            'A1'
+        );
+        $sheet->getStyle('A1:I1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:I1')->getFill()
+            ->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFD9E1F2');
+
+        $fila = 2;
+        foreach ($stock as $material) {
+            $sheet->setCellValue('A' . $fila, $material->codigo_material);
+            $sheet->setCellValue('B' . $fila, $material->nombre);
+            $sheet->setCellValue('C' . $fila, $material->categoria_nombre);
+            $sheet->setCellValue('D' . $fila, $material->unidad_nombre);
+            $sheet->setCellValue('E' . $fila, $material->total_entrada);
+            $sheet->setCellValue('F' . $fila, $material->total_salida);
+            $sheet->setCellValue('G' . $fila, $material->stock_actual);
+            $sheet->setCellValue('H' . $fila, $material->precio_unitario);
+            $sheet->setCellValue('I' . $fila, (float) $material->stock_actual * (float) $material->precio_unitario);
+            $fila++;
+        }
+
+        foreach (range('A', 'I') as $columna) {
+            $sheet->getColumnDimension($columna)->setAutoSize(true);
+        }
+
+        $filename = 'stock_almacen_' . now()->format('Y-m-d-His') . '.xlsx';
+        $writer = new Xlsx($spreadsheet);
+
+        return response()->stream(
+            function () use ($writer) {
+                $writer->save('php://output');
+            },
+            200,
+            [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            ]
+        );
     }
 }
