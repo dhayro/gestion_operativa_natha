@@ -704,6 +704,24 @@
     </div>
 </div>
 
+<!-- Modal de solo lectura: detalle de la ficha -->
+<div class="modal fade" id="verFichaModal" tabindex="-1" aria-labelledby="verFichaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="verFichaModalLabel">Detalle de Ficha de Actividad</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="verFichaContent">
+                <div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @section('scripts')
@@ -1724,6 +1742,113 @@
                 html += '</div>';
             }
             $('#fotosList').html(html);
+        });
+    }
+
+    // ===== VER DETALLE DE FICHA (solo lectura) =====
+    function verFicha(id) {
+        const esc = (valor) => $('<div>').text(valor ?? '').html();
+        const campo = (etiqueta, valor) => `
+            <div class="col-md-4 col-sm-6 mb-3">
+                <small class="text-muted d-block">${etiqueta}</small>
+                <span>${valor ? esc(valor) : '-'}</span>
+            </div>`;
+        const seccion = (titulo, items, renderFila, encabezados) => {
+            let html = `<h6 class="mt-4 mb-2">${titulo} <span class="badge bg-secondary">${items.length}</span></h6>`;
+            if (items.length === 0) {
+                return html + '<p class="text-muted small mb-0">Sin registros</p>';
+            }
+            html += `<div class="table-responsive"><table class="table table-sm table-bordered mb-0"><thead><tr>${encabezados.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>`;
+            items.forEach(item => { html += renderFila(item); });
+            return html + '</tbody></table></div>';
+        };
+
+        $('#verFichaContent').html('<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>');
+        $('#verFichaModal').modal('show');
+
+        $.when(
+            $.get(`{{ url('fichas-actividad') }}/${id}`),
+            $.get(`/fichas-actividad/${id}/detalles/empleados`),
+            $.get(`/fichas-actividad/${id}/detalles/medidores`),
+            $.get(`/fichas-actividad/${id}/detalles/materiales`),
+            $.get(`/fichas-actividad/${id}/detalles/precintos`),
+            $.get(`/fichas-actividad/${id}/detalles/fotos`)
+        ).done(function(fichaRes, empleadosRes, medidoresRes, materialesRes, precintosRes, fotosRes) {
+            const f = fichaRes[0].data;
+            const empleados = empleadosRes[0].data;
+            const medidores = medidoresRes[0].data;
+            const materiales = materialesRes[0].data;
+            const precintos = precintosRes[0].data;
+            const fotos = fotosRes[0].data;
+            const fecha = f.fecha ? f.fecha.substring(0, 16).replace('T', ' ') : null;
+
+            let html = `
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <span class="badge ${f.estado ? 'bg-success' : 'bg-danger'}">${f.estado ? 'Activo' : 'Inactivo'}</span>
+                    <span class="text-muted small">Ficha #${f.id}</span>
+                </div>
+                <div class="row">
+                    ${campo('Suministro', f.suministro ? `${f.suministro.codigo ?? ''} ${f.suministro.nombre ?? ''}`.trim() : null)}
+                    ${campo('Tipo de actividad', f.tipo_actividad?.nombre)}
+                    ${campo('Fecha', fecha)}
+                    ${campo('Tipo de propiedad', f.tipo_propiedad?.nombre)}
+                    ${campo('Construcción', f.construccion?.nombre)}
+                    ${campo('Servicio eléctrico', f.servicio_electrico?.nombre)}
+                    ${campo('Uso', f.uso?.nombre)}
+                    ${campo('Situación', f.situacion?.nombre)}
+                    ${campo('Detalle de situación', f.situacion_detalle)}
+                    ${campo('Número de piso', f.numero_piso)}
+                    ${campo('Suministro derecho', f.suministro_derecho)}
+                    ${campo('Suministro izquierdo', f.suministro_izquierdo)}
+                    ${campo('Dirección', f.direccion)}
+                    ${campo('Documento', f.documento)}
+                    ${campo('Coordenadas', f.latitud && f.longitud ? `${f.latitud}, ${f.longitud}` : null)}
+                    ${campo('Observación', f.observacion)}
+                </div>`;
+
+            html += seccion('👥 Empleados asignados', empleados, item => `
+                <tr>
+                    <td>${esc(item.cuadrilla_empleado?.cuadrilla?.nombre)}</td>
+                    <td>${esc([item.cuadrilla_empleado?.empleado?.nombre, item.cuadrilla_empleado?.empleado?.apellido].filter(Boolean).join(' ') || 'N/A')}</td>
+                </tr>`, ['Cuadrilla', 'Empleado']);
+
+            html += seccion('📊 Medidores', medidores, item => `
+                <tr>
+                    <td>${esc(item.medidor?.serie)}</td>
+                    <td>${esc(item.tipo)}</td>
+                    <td>${esc(item.lectura ?? '-')}</td>
+                </tr>`, ['Medidor', 'Tipo', 'Lectura']);
+
+            html += seccion('🔧 Materiales', materiales, item => `
+                <tr>
+                    <td>${esc(item.material?.nombre)}</td>
+                    <td>${esc(item.cantidad)}</td>
+                    <td>${esc(item.observacion ?? '-')}</td>
+                </tr>`, ['Material', 'Cantidad', 'Observación']);
+
+            html += seccion('🔐 Precintos', precintos, item => `
+                <tr>
+                    <td>${esc(item.numero_precinto)}</td>
+                    <td>${esc(item.tipo)}</td>
+                    <td>${esc(item.medidor_ficha_actividad?.medidor?.serie ?? '-')}</td>
+                </tr>`, ['Número', 'Tipo', 'Medidor']);
+
+            html += '<h6 class="mt-4 mb-2">📸 Fotos <span class="badge bg-secondary">' + fotos.length + '</span></h6>';
+            if (fotos.length === 0) {
+                html += '<p class="text-muted small mb-0">Sin registros</p>';
+            } else {
+                html += '<div class="row">' + fotos.map(item => `
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <a href="${esc(item.foto_url)}" target="_blank" rel="noopener">
+                            <img src="${esc(item.foto_url)}" class="img-fluid rounded" style="height: 150px; width: 100%; object-fit: cover;" alt="Foto" onerror="this.src='/images/placeholder.png'; this.style.opacity='0.7';" loading="lazy">
+                        </a>
+                        <small class="text-muted d-block mt-1">${esc(item.descripcion || 'Sin descripción')}</small>
+                    </div>`).join('') + '</div>';
+            }
+
+            $('#verFichaContent').html(html);
+        }).fail(function() {
+            $('#verFichaContent').html('<div class="alert alert-danger mb-0">No se pudo cargar el detalle de la ficha.</div>');
         });
     }
 
